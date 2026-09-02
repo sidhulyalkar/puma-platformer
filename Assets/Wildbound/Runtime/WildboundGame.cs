@@ -80,6 +80,8 @@ namespace Wildbound.Unity
             if ((e & GameEvent.Respawn) != 0) { view.SnapCamera(); Announce("A soft landing. Your discoveries are still yours."); }
             if ((e & GameEvent.Checkpoint) != 0) Announce("Trail remembered.");
             if ((e & GameEvent.Secret) != 0) Announce(Session.World.Memory, 7);
+            if ((e & GameEvent.Discovery) != 0 && Session.LastDiscovery != null)
+                Announce(Session.LastDiscovery.Name + ". " + Session.LastDiscovery.Story, 8);
             if ((e & GameEvent.Bloom) != 0) Announce("Moonwake. A bridge of light answers her claws.");
             if ((e & GameEvent.Hunt) != 0) Announce("Prey caught. A heart restored; ready to leap again.");
             if ((e & GameEvent.Block) != 0) Announce("Armored front. Get above or behind him.", 2);
@@ -88,7 +90,7 @@ namespace Wildbound.Unity
             if ((e & GameEvent.Breach) != 0) Announce("Roots part. Find your opening beyond them.");
             if ((e & GameEvent.ObjectiveBlocked) != 0 && Session.InTrial) Announce(Session.World.Trial.NextGoal(Session.World), 5);
             if ((e & GameEvent.Waystone) != 0) Announce("Waystone restored. This region's light bridges now stay awake.", 7);
-            if ((e & (GameEvent.Collect | GameEvent.Secret | GameEvent.Checkpoint | GameEvent.Portal | GameEvent.Waystone)) != 0) MarkSave();
+            if ((e & (GameEvent.Collect | GameEvent.Secret | GameEvent.Checkpoint | GameEvent.Portal | GameEvent.Waystone | GameEvent.Discovery)) != 0) MarkSave();
             if (!completedBefore && Session.Save.Completed) { ShowEnding = true; Session.SetPaused(true); }
             sound.React(e); view.React(e);
         }

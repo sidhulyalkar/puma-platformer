@@ -4,7 +4,7 @@
 
 A Unity 2D exploration platformer about a female puma hunting beneath the moon. Stalk a moss hare, turn a pounce into a claw strike, read a bristleback's charge, and wake a hidden bridge with a moonbloom. Follow the trail from a nocturnal forest through a lantern grotto to a floating sky garden. The main trail stays open; the scenic route asks more of your paws.
 
-This repository contains **v0.3: The Moontrail**, written for **Unity 6000.3.22f1**. The gameplay simulation has executable regression coverage. **Unity import, rendering, editor playtesting, and WebGL execution still need verification.** No browser release is published yet.
+This repository contains **v0.4: Living Trails**, written for **Unity 6000.3.22f1**. The gameplay simulation has executable regression coverage. **Unity import, rendering, editor playtesting, and WebGL execution still need verification.** No browser release is published yet.
 
 ## Play in Unity
 
@@ -19,10 +19,11 @@ The opening scene builds its own world, camera, puma, interface, and audio. No a
 
 | Region | Traversal character | Discovery |
 | --- | --- | --- |
-| Amber Canopy | Broad landings, low steps, first pounce gaps | A memory above the forest floor |
-| Lantern Grotto | Additional wall-kick shafts and high ledges | A lantern perch above the main trail |
-| Sky Garden | More flowers and floating platforms | A memory at the highest garden |
+| Amber Canopy | A low root passage and a branching canopy loop | Root Hollow and Amber Overlook |
+| Lantern Grotto | A tall switchback chamber with a sheltered lower trail | Stillwater Shelf and Lantern Roost |
+| Sky Garden | Spring approaches, upper islands, and a moving perch | Cloud Nest and Starflower Crown |
 
+- **Six wild places:** follow physical pawprints and nearby scent clues, discover hollows and high perches, and open golden return paths that survive falls and reloads. Shelter stars remember collected memories.
 - Accelerated movement, variable jump height, coyote time, and buffered jumps.
 - **Charged pounce:** hold to coil; release for an arcing leap. Charge changes range; up/down changes the angle. One aerial pounce until you land or touch a spring flower.
 - Wall slides and wall kicks, with a brief steering lock so the kick actually clears the wall.
@@ -78,7 +79,7 @@ dotnet run --project tests/Wildbound.Tests.csproj --configuration Release
 python3 tools/validate_project.py
 ```
 
-**98 regression cases** cover movement, combat timing, enemy patterns, armor, projectile collision ordering, low-ceiling rolls, hunting rewards, moonblooms, saves, and actual input-driven routes to all three exits. They include three complete trial routes, the grotto roll alternative, and 99,000 seeded movement/combat/trial stress steps. The GitHub Actions workflow runs both commands. These are simulation and structural checks, not a substitute for Unity runtime qualification.
+**112 regression cases** cover movement, combat timing, enemy patterns, armor, projectile collision ordering, low-ceiling rolls, hunting rewards, moonblooms, saves, and actual input-driven routes to all three exits. They include three complete trial routes, all six wild places and three memories through actual input with a return to shelter, the grotto roll alternative, and 99,000 seeded movement/combat/trial stress steps. CI also parses every Unity C# source for syntax; a pinned .NET 8 SDK keeps the checks consistent. The GitHub Actions workflow runs both commands. These are simulation and structural checks, not a substitute for Unity runtime qualification.
 
 Run the same cases in **Window → General → Test Runner → EditMode**. On macOS, the command-line equivalents are:
 
@@ -105,6 +106,7 @@ Open `http://localhost:8000`. The eventual `sidhulyalkar.com` arcade can embed t
 
 ## Development notes
 
+- [Living Trails: regions, discoveries, and route schematics](docs/LIVING_TRAILS.md)
 - [Design direction and next milestones](docs/DESIGN.md)
 - [Moontrail objectives, strategies, and room maps](docs/MOONTRAIL.md)
 - [Night Hunt moves, enemies, and light rules](docs/NIGHT_HUNT.md)

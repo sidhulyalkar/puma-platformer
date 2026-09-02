@@ -6,15 +6,16 @@ namespace Wildbound.Core
     [Serializable]
     public sealed class JourneySave
     {
-        public int Version = 1, Biome, FurthestBiome, Waystones;
+        public int Version = 1, Biome, FurthestBiome, Waystones, Discoveries;
         public int[] Collected = new int[3], Checkpoints = { -1, -1, -1 };
         public bool Completed;
         public void Sanitize()
         {
-            if (Version != 1) { Biome = FurthestBiome = Waystones = 0; Collected = new int[3]; Checkpoints = new[] { -1, -1, -1 }; Completed = false; }
+            if (Version != 1) { Biome = FurthestBiome = Waystones = Discoveries = 0; Collected = new int[3]; Checkpoints = new[] { -1, -1, -1 }; Completed = false; }
             Version = 1; Biome = Math.Max(0, Math.Min(2, Biome));
             FurthestBiome = Math.Max(Biome, Math.Max(0, Math.Min(2, FurthestBiome)));
             Waystones = Waystones < 0 ? 0 : Waystones & 7;
+            Discoveries = Discoveries < 0 ? 0 : Discoveries & 63;
             if (Collected == null || Collected.Length != 3) Collected = new int[3];
             if (Checkpoints == null || Checkpoints.Length != 3) Checkpoints = new[] { -1, -1, -1 };
             for (int i = 0; i < 3; i++) { Collected[i] &= (1 << 13) - 1; Checkpoints[i] = Math.Max(-1, Math.Min(1, Checkpoints[i])); }
@@ -35,6 +36,11 @@ namespace Wildbound.Core
         public int Deaths { get; private set; }
         public float Recovery { get; private set; }
         public bool Paused;
+        public WildPlace LastDiscovery { get; private set; }
+        public int DiscoveryCount
+        {
+            get { int n = 0; for (int i = 0; i < 6; i++) if ((Save.Discoveries & (1 << i)) != 0) n++; return n; }
+        }
         private WorldDefinition outsideWorld;
         private V2 outsidePosition;
         private float outsideTime;
@@ -53,6 +59,8 @@ namespace Wildbound.Core
             Player = new PumaMotor(CheckpointPosition());
             Combat.ResetForRespawn(); Projectiles.Clear();
             RestoreLightBridges();
+            foreach (var place in World.Places) if ((Save.Discoveries & place.Mask) != 0) place.OpenPath(World);
+            LastDiscovery = null;
         }
         private void RestoreLightBridges()
         {
@@ -111,6 +119,20 @@ namespace Wildbound.Core
                 if (d < best) { best = d; result = sign; }
             }
             return result;
+        }
+        public WildPlace NearbyTrail()
+        {
+            WildPlace nearest = null; float distance = 8;
+            foreach (var place in World.Places)
+            {
+                if (place.Found) continue;
+                foreach (var track in place.Tracks)
+                {
+                    float d = (track - Player.Position).Length;
+                    if (d < distance && WildPlace.ScentVisible(World, Player, track)) { nearest = place; distance = d; }
+                }
+            }
+            return nearest;
         }
         public void Step(PlayerInput input, float dt = StepSeconds)
         {
@@ -196,6 +218,12 @@ namespace Wildbound.Core
                 }
                 return; // Trial progress must never overwrite the outside world's pickup/checkpoint IDs.
             }
+            foreach (var place in World.Places)
+                if (!place.Found && place.Reached(Player))
+                {
+                    place.OpenPath(World); Save.Discoveries |= place.Mask;
+                    LastDiscovery = place; Events |= GameEvent.Discovery;
+                }
             for (int i = 0; i < World.Pickups.Count; i++)
             {
                 var p = World.Pickups[i];

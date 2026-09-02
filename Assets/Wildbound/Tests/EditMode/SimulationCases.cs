@@ -10,6 +10,7 @@ namespace Wildbound.Tests
         {
             foreach (var pair in CombatCases.All) All.Add(pair.Key, pair.Value);
             foreach (var pair in MoontrailCases.All) All.Add(pair.Key, pair.Value);
+            foreach (var pair in ExplorationCases.All) All.Add(pair.Key, pair.Value);
         }
         public static readonly Dictionary<string, Action> All = new Dictionary<string, Action>
         {
@@ -140,6 +141,7 @@ namespace Wildbound.Tests
         private static void CheckpointRecovery()
         {
             var g = new GameSession(); g.Player.Reset(new V2(23, 1)); Tick(g, 2); Check(g.Save.Checkpoints[0] == 0, "Checkpoint not recorded");
+            g.World.Hazards.Add(new Box(30, 1, 2, .45f)); // Isolate recovery from the introductory region layout.
             g.Save.Collected[0] = 2; g.Player.Reset(new V2(30.5f, 1)); g.Step(new PlayerInput());
             Check(g.Deaths == 1 && Near(g.Player.Position.X, 23) && g.Save.Collected[0] == 2, "Recovery lost position or discoveries");
         }
@@ -215,6 +217,7 @@ namespace Wildbound.Tests
         private static void TraverseWorlds()
         {
             // No position edits, portal shortcuts, or collision bypasses in this route.
+            string failures = "";
             for (int biome = 0; biome < 3; biome++)
             {
                 var g = new GameSession(new JourneySave { Biome = biome }); int chargeTicks = 0; bool reached = false;
@@ -228,8 +231,9 @@ namespace Wildbound.Tests
                     g.Step(input);
                     if (g.Save.Biome != biome || g.Save.Completed) { reached = true; break; }
                 }
-                Check(reached && g.Deaths <= 1, "Unreachable or punishing main route in biome " + biome);
+                if (!reached || g.Deaths > 1) failures += " biome " + biome + " at " + g.Player.Position.X.ToString("F2") + "," + g.Player.Position.Y.ToString("F2") + " deaths=" + g.Deaths + ";";
             }
+            Check(failures.Length == 0, "Main route:" + failures);
         }
         private static void LongPlay()
         {

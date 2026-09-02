@@ -15,5 +15,7 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Validate Unity project structure and metadata
         run: python3 tools/validate_project.py
+      - name: Parse every Unity C# source
+        run: dotnet run --project tools/CSharpSyntax/CSharpSyntax.csproj --configuration Release -- Assets
       - name: Execute the actual gameplay simulation
         run: dotnet run --project tests/Wildbound.Tests.csproj --configuration Release

@@ -102,7 +102,7 @@ namespace Wildbound.Unity
                 art.Halo = Shape("moonbloom light", disc, Vector2.zero, Vector2.one * 2, new Color(.5f, .8f, 1, .09f), 4, art.Root);
                 blooms.Add(art);
             }
-            for (int i = 0; i < platforms.Count; i++) if (game.Session.World.Platforms[i].Surface == Surface.Moonbridge)
+            for (int i = 0; i < platforms.Count; i++) if (game.Session.World.Platforms[i].Surface == Surface.Moonbridge || game.Session.World.Platforms[i].Surface == Surface.Trailbridge)
             {
                 var parts = platforms[i].GetComponentsInChildren<SpriteRenderer>(); var colors = new Color[parts.Length];
                 for (int j = 0; j < parts.Length; j++) colors[j] = parts[j].color;

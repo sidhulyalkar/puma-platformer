@@ -39,7 +39,7 @@
       script.onerror=()=>{script.remove();failure('Check your connection and retry.');};
       script.onload=()=>createUnityInstance(canvas,{
         dataUrl:'Build/{{{ DATA_FILENAME }}}',frameworkUrl:'Build/{{{ FRAMEWORK_FILENAME }}}',codeUrl:'Build/{{{ CODE_FILENAME }}}',
-        streamingAssetsUrl:'StreamingAssets',companyName:'Sid Hulyalkar',productName:'Puma: Wildbound',productVersion:'0.3.0',
+        streamingAssetsUrl:'StreamingAssets',companyName:'Sid Hulyalkar',productName:'Puma: Wildbound',productVersion:'0.4.0',
         devicePixelRatio:Math.min(window.devicePixelRatio||1,2)
       },value=>{progress.value=value;}).then(game=>{instance=game;loading.hidden=true;fullscreen.hidden=false;canvas.focus();}).catch(()=>failure('WebGL 2 and a supported desktop browser are required.'));
       document.body.appendChild(script);
