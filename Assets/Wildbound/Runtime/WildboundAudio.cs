@@ -29,7 +29,7 @@ namespace Wildbound.Unity
             if ((events & GameEvent.Hurt) != 0) source.PlayOneShot(hurt, .24f);
             if ((events & (GameEvent.Claw | GameEvent.DashClaw)) != 0) source.PlayOneShot(claw, .22f);
             if ((events & GameEvent.Hunt) != 0) source.PlayOneShot(collect, .22f);
-            if ((events & (GameEvent.Secret | GameEvent.Checkpoint | GameEvent.Portal)) != 0) source.PlayOneShot(bell, .3f);
+            if ((events & (GameEvent.Secret | GameEvent.Checkpoint | GameEvent.Portal | GameEvent.Discovery)) != 0) source.PlayOneShot(bell, .3f);
             else if ((events & GameEvent.Collect) != 0) source.PlayOneShot(collect, .2f);
             if ((events & GameEvent.Pounce) != 0) source.PlayOneShot(pounce, .28f);
             else if ((events & (GameEvent.Jump | GameEvent.WallKick | GameEvent.Spring | GameEvent.Stomp)) != 0) source.PlayOneShot(jump, .2f);

@@ -88,6 +88,7 @@ namespace Wildbound.Unity
             }
             BuildCombatArt();
             BuildTrialArt();
+            BuildExplorationArt();
             if (!game.Session.InTrial) BuildPortal(game.Session.World.Exit);
             BuildPuma();
             for (int i = 0; i < 72; i++)
@@ -137,10 +138,11 @@ namespace Wildbound.Unity
             Shape("earth", square, Vector2.zero, new Vector2(w, h), rock, 5, root);
             Shape("grassy lip", square, new Vector2(0, h / 2 - .07f), new Vector2(w, .14f), moss, 7, root);
             Shape("edge shadow", square, new Vector2(0, h / 2 - .22f), new Vector2(w, .1f), rock * new Color(.7f, .7f, .7f, 1), 6, root);
-            if (p.Surface == Surface.Moonbridge)
+            if (p.Surface == Surface.Moonbridge || p.Surface == Surface.Trailbridge)
             {
-                Shape("moon edge", square, new Vector2(0, h / 2), new Vector2(w, .06f), light, 9, root);
-                for (int i = 0; i < w; i++) Shape("moon rune", disc, new Vector2(i - w / 2 + .5f, 0), Vector2.one * .1f, light, 10, root);
+                Color edge = p.Surface == Surface.Trailbridge ? Hex("ffd88a") : light;
+                Shape("moon edge", square, new Vector2(0, h / 2), new Vector2(w, .06f), edge, 9, root);
+                for (int i = 0; i < w; i++) Shape("moon rune", disc, new Vector2(i - w / 2 + .5f, 0), Vector2.one * .1f, edge, 10, root);
             }
             else if (p.Surface == Surface.RootGate)
             {
@@ -215,7 +217,7 @@ namespace Wildbound.Unity
         {
             if (cameraView == null) return;
             var p = game.Session.Player.Position;
-            cameraView.transform.position = new Vector3(Mathf.Clamp(p.X + 3, 8, game.Session.World.CameraMaxX), Mathf.Clamp(p.Y + 4.1f, 5.7f, 20), -10);
+            cameraView.transform.position = new Vector3(Mathf.Clamp(p.X + 3, 8, game.Session.World.CameraMaxX), Mathf.Clamp(p.Y + 4.1f, 5.7f, game.Session.World.CameraMaxY), -10);
             cameraVelocity = Vector3.zero;
         }
         public void React(GameEvent e)
@@ -224,7 +226,7 @@ namespace Wildbound.Unity
             { impact = .22f; Emit(9, game.Session.Player.Position, moss); }
             if ((e & GameEvent.Pounce) != 0) shake = .12f;
             CombatFeedback(e);
-            if ((e & (GameEvent.Collect | GameEvent.Secret)) != 0) Emit(12, game.Session.Player.Position + new V2(0, .8f), light);
+            if ((e & (GameEvent.Collect | GameEvent.Secret | GameEvent.Discovery)) != 0) Emit(12, game.Session.Player.Position + new V2(0, .8f), light);
         }
         private void LateUpdate()
         {
@@ -244,6 +246,7 @@ namespace Wildbound.Unity
             }
             UpdateCombatArt();
             UpdateTrialArt();
+            UpdateExplorationArt();
             for (int i = 0; i < checkpoints.Count; i++) checkpoints[i].color = session.Save.Checkpoints[session.Save.Biome] == i ? Hex("fff6d8") : distant;
             cat.position = Point(p.Position);
             float crouch = p.LowProfile ? .42f : p.Stalking ? .22f : p.Charging ? p.Charge * .28f : 0;
@@ -271,7 +274,7 @@ namespace Wildbound.Unity
                     Color c = s.Renderer.color; c.a = Mathf.Max(0, s.Life / s.MaxLife); s.Renderer.color = c;
                 }
             }
-            var target = new Vector3(Mathf.Clamp(p.Position.X + p.Facing * 2.8f, 8, session.World.CameraMaxX), Mathf.Clamp(p.Position.Y + 4.1f, 5.7f, 20), -10);
+            var target = new Vector3(Mathf.Clamp(p.Position.X + p.Facing * 2.8f, 8, session.World.CameraMaxX), Mathf.Clamp(p.Position.Y + 4.1f, 5.7f, session.World.CameraMaxY), -10);
             cameraView.transform.position = Vector3.SmoothDamp(cameraView.transform.position, target, ref cameraVelocity, game.ReducedMotion ? .1f : .23f, Mathf.Infinity, dt);
             if (!game.ReducedMotion && shake > 0 && !session.Paused) cameraView.transform.position += new Vector3(Mathf.Sin(t * 111) * shake * .35f, 0, 0);
             far.localPosition = new Vector3(cameraView.transform.position.x * .75f, cameraView.transform.position.y * .4f, 0);

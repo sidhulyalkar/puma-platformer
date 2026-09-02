@@ -7,7 +7,8 @@ namespace Wildbound.Unity
     {
         private WildboundGame game;
         private GUIStyle text, title, eyebrow, button;
-        private bool journal, trialGuide;
+        private bool trialGuide;
+        private int mapPage;
         private readonly Color ink = new Color(.055f, .12f, .15f, .94f);
         private readonly Color paper = new Color(1, .94f, .82f);
         private readonly Color muted = new Color(.65f, .79f, .76f);
@@ -51,8 +52,8 @@ namespace Wildbound.Unity
             Label(65, 108, 490, 25, "P U M A   /   T H E   N I G H T   I S   H E R S", eyebrow);
             Label(60, 153, 560, 95, "WILDBOUND", title);
             Label(65, 267, 430, 80, "Quiet paws.\nA wild heart after dark.", new GUIStyle(text) { fontSize = 29 });
-            Label(65, 370, 405, 80, "Hunt through three night worlds. Restore their waystones with steady paws, ringing claws, and a well-timed leap.", text);
-            if (Button(65, 488, 280, 54, game.Session.Save.Biome > 0 || game.Session.Save.Collected[0] != 0 || game.Session.WaystoneCount > 0 ? "Continue your trail  /  ENTER" : "Begin exploring  /  ENTER")) game.Begin();
+            Label(65, 370, 405, 80, "Follow scents through three night worlds. Discover quiet hollows, high roosts, and paths that remember your paws.", text);
+            if (Button(65, 488, 280, 54, game.Session.Save.Biome > 0 || game.Session.Save.Collected[0] != 0 || game.Session.WaystoneCount > 0 || game.Session.DiscoveryCount > 0 ? "Continue your trail  /  ENTER" : "Begin exploring  /  ENTER")) game.Begin();
             if (Button(65, 557, 190, 43, "Field guide  /  C")) game.ShowControls = true;
             Label(65, 656, 465, 26, "A SID HULYALKAR GAME   /   DEVELOPMENT SLICE", eyebrow);
         }
@@ -60,7 +61,7 @@ namespace Wildbound.Unity
         {
             Panel(24, 23, 415, 57, ink);
             Label(42, 32, 385, 23, game.Session.World.Name, eyebrow);
-            Label(42, 54, 365, 22, game.Session.InTrial ? "WAYSTONE TRIAL  /  TAB journal" : "Find the arch. Restore the moontrail.", new GUIStyle(eyebrow) { fontSize = 12 });
+            Label(42, 54, 365, 22, game.Session.InTrial ? "WAYSTONE TRIAL  /  TAB journal" : "Follow tracks. Find the arch.", new GUIStyle(eyebrow) { fontSize = 12 });
             Panel(863, 23, 393, 57, ink);
             Label(884, 41, 360, 29, game.Session.InTrial ? "WAYSTONES  " + game.Session.WaystoneCount + " / 3" : "LIGHT  " + game.Session.Motes + " / 12     MEMORIES  " + game.Session.Memories + " / 3", text);
             Panel(455, 23, 390, 57, ink);
@@ -77,6 +78,15 @@ namespace Wildbound.Unity
                 {
                     Panel(320, 566, 640, 99, ink); Label(341, 581, 598, 24, sign.Heading, eyebrow);
                     Label(341, 610, 598, 53, sign.Text, text);
+                }
+                else
+                {
+                    var trail = game.Session.NearbyTrail();
+                    if (trail != null)
+                    {
+                        Panel(320, 566, 640, 99, ink); Label(341, 581, 598, 24, "A SCENT ON THE NIGHT AIR", eyebrow);
+                        Label(341, 610, 598, 53, trail.Hint, new GUIStyle(text) { fontSize = 17 });
+                    }
                 }
                 if (p.Charging)
                 {
@@ -95,7 +105,7 @@ namespace Wildbound.Unity
             else
             {
                 string[] keys = { "A / D or arrows", "SPACE  /  gamepad A", "SHIFT  /  gamepad X", "J / click  /  RB", "K  /  gamepad RT", "L  /  gamepad B", "Hold Q  /  gamepad LT", "E  /  gamepad Y", "TAB   /   C   /   ESC", "R   /   M" };
-                string[] actions = { "Roam. W/S or the stick aims a pounce.", "Jump; hold for height. Jump against a wall to kick.", "Hold to coil, release to pounce. Land to recharge.", "Claw chain. W+J rises; airborne S+J rakes down.", "Dash-claw. Three defeats empower the next rush.", "Ground roll. Dodge in the middle; beware recovery.", "Stalk prey; balance with small steering corrections.", "Use an arch, enter a trial, or restore a waystone.", "Map / journal, field guide, pause. Start also pauses.", "Return to checkpoint / toggle sound." };
+                string[] actions = { "Roam. W/S or the stick aims a pounce.", "Jump; hold for height. Jump against a wall to kick.", "Hold to coil, release to pounce. Land to recharge.", "Claw chain. W+J rises; airborne S+J rakes down.", "Dash-claw. Three defeats empower the next rush.", "Ground roll. Dodge in the middle; beware recovery.", "Stalk prey, reveal local tracks, and balance on perches.", "Use an arch, enter a trial, or restore a waystone.", "Map / journal, field guide, pause. Start also pauses.", "Return to checkpoint / toggle sound." };
                 for (int i = 0; i < keys.Length; i++)
                 {
                     Label(278, 163 + i * 37, 245, 37, keys[i], eyebrow);
@@ -120,24 +130,29 @@ namespace Wildbound.Unity
         }
         private void Map()
         {
+            if (game.Session.InTrial && mapPage == 2) mapPage = 1;
             Panel(150, 95, 980, 530, ink);
-            Label(196, 126, 655, 40, journal ? "THE MOONTRAIL JOURNAL" : "YOUR TRAIL THROUGH THE NIGHT", new GUIStyle(title) { fontSize = 29 });
-            if (Button(870, 124, 215, 38, journal ? "Show map" : "Show objectives")) journal = !journal;
+            Label(196, 126, 655, 40, mapPage == 1 ? "THE MOONTRAIL JOURNAL" : mapPage == 2 ? "WILD PLACES" : "YOUR TRAIL THROUGH THE NIGHT", new GUIStyle(title) { fontSize = 29 });
+            if (Button(870, 124, 215, 38, mapPage == 0 ? "Show objectives" : mapPage == 1 && !game.Session.InTrial ? "Show wild places" : "Show map")) mapPage = (mapPage + 1) % (game.Session.InTrial ? 2 : 3);
             Label(196, 184, 888, 32, game.Session.World.Name + "   /   You are the amber mark", eyebrow);
-            if (journal) Journal();
+            if (mapPage == 1) Journal();
+            else if (mapPage == 2) PlacesJournal();
             else
             {
                 foreach (var p in game.Session.World.Platforms)
                 {
                     if (p.Surface == Surface.RootGate && !p.Enabled) continue;
                     var b = p.Bounds; if (b.H > 10 && p.Surface != Surface.RootGate) continue;
-                    Panel(210 + b.X * 10, 477 - b.Top * 11, b.W * 10, Mathf.Min(p.Surface == Surface.RootGate ? 150 : 20, b.H * 11), p.Enabled ? new Color(.4f, .65f, .64f) : new Color(.3f, .45f, .55f, .2f));
+                    Vector2 mark = OnMap(new V2(b.X, b.Top));
+                    Color color = p.Surface == Surface.Trailbridge ? new Color(1, .8f, .4f, p.Enabled ? 1 : .2f) : p.Enabled ? new Color(.4f, .65f, .64f) : new Color(.3f, .45f, .55f, .2f);
+                    Panel(mark.x, mark.y, b.W * MapScale, Mathf.Max(2, Mathf.Min(20, b.H * MapScale)), color);
                 }
                 var pos = game.Session.Player.Position;
-                Panel(205 + pos.X * 10, 466 - pos.Y * 11, 10, 10, new Color(1, .73f, .4f));
-                foreach (var checkpoint in game.Session.World.Checkpoints) Panel(206 + checkpoint.X * 10, 467 - checkpoint.Y * 11, 8, 8, paper);
+                MapMark(pos, 10, new Color(1, .73f, .4f));
+                foreach (var checkpoint in game.Session.World.Checkpoints) MapMark(checkpoint, 7, paper);
+                foreach (var place in game.Session.World.Places) if (place.Found) MapMark(place.Position, 8, new Color(1, .86f, .5f));
                 V2 objective = game.Session.InTrial ? game.Session.World.Trial.NextPosition(game.Session.World) : game.Session.WaystoneRestored(game.Session.Save.Biome) ? game.Session.World.Exit : Moontrial.Entrance;
-                Panel(205 + objective.X * 10, 466 - objective.Y * 11, 10, 10, new Color(.7f, .8f, 1));
+                MapMark(objective, 10, new Color(.7f, .8f, 1));
                 Label(196, 510, 888, 42, game.Session.InTrial ? "Violet mark: next mechanism or sanctuary. The crescent at the start returns to your trail." : game.Session.WaystoneRestored(game.Session.Save.Biome) ? "Waystone restored. Violet mark: the arch onward. Your bridges will stay awake." : "Violet mark: waystone trial. Restore it for permanent light bridges. The arch continues your journey.", new GUIStyle(text) { fontSize = 17 });
             }
             string[] names = { "Canopy", "Grotto", "Sky garden" };
@@ -148,6 +163,25 @@ namespace Wildbound.Unity
             else for (int i = 0; i <= game.Session.Save.FurthestBiome; i++)
                     if (Button(470 + i * 195, 569, 180, 37, names[i])) game.TravelTo(i);
             if (Button(196, 569, 250, 37, "Back to the trail  /  TAB")) game.Resume();
+        }
+        private float MapScale { get { Box b = game.Session.World.MapBounds; return Mathf.Min(860 / b.W, 268 / b.H); } }
+        private Vector2 OnMap(V2 position)
+        {
+            Box b = game.Session.World.MapBounds; float scale = MapScale;
+            return new Vector2(210 + (860 - b.W * scale) / 2 + (position.X - b.X) * scale, 493 - (position.Y - b.Y) * scale);
+        }
+        private void MapMark(V2 point, float size, Color color)
+        { Vector2 p = OnMap(point); Panel(p.x - size / 2, p.y - size, size, size, color); }
+        private void PlacesJournal()
+        {
+            var s = game.Session;
+            for (int i = 0; i < s.World.Places.Count; i++)
+            {
+                var place = s.World.Places[i];
+                JournalRow(i, place.Found ? place.Name : "A TRAIL TO FOLLOW", place.Found ? place.Story : place.Hint, place.Found);
+            }
+            Label(196, 429, 888, 55, "WILD PLACES  " + s.DiscoveryCount + " / 6     MEMORIES  " + s.Memories + " / 3\nReach a resting place on your paws to discover it. Its golden return path stays open.", new GUIStyle(text) { fontSize = 18 });
+            Label(196, 513, 888, 41, "Q / LT brings nearby tracks into focus. Discovery survives falls and return visits. Shelter stars remember the memories you found.", new GUIStyle(text) { fontSize = 17 });
         }
         private void Ending()
         {

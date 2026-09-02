@@ -113,7 +113,7 @@ namespace Wildbound.Core
         {
             if (biome < 0 || biome > 2) throw new ArgumentOutOfRangeException("biome");
             var w = new WorldDefinition { Biome = biome, Name = Title(biome), Subtitle = "Restore the waystone. Every lit mechanism survives a fall.",
-                Memory = "A small light can change a whole trail.", CameraMaxX = 46, Trial = new Moontrial(biome) };
+                Memory = "A small light can change a whole trail.", CameraMaxX = 46, MapBounds = new Box(-6, -3, 61, 29), Trial = new Moontrial(biome) };
             var trial = w.Trial;
             w.Add(-5, -3, 17, 4); w.Add(12, -3, 26, 1); w.Add(38, -3, 16, 4);
             w.Add(-6, -3, 1, 25, Surface.Stone); w.Add(54, -3, 1, 25, Surface.Stone);
