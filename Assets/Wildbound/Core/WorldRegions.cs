@@ -41,7 +41,7 @@ namespace Wildbound.Core
                 new V2(24, 6.3f), new V2(31, 9.2f), new V2(36.5f, 3.8f), new V2(40, 2.5f), new V2(45, 7.5f),
                 new V2(46.5f, 10.2f), new V2(55, 6.1f), new V2(64, 4.8f), new V2(71, 7.3f));
             w.Signs.Add(new Sign(10.5f, 1, "SMALL PATHS, SOFT PAWS", "Faint pawprints lead under the roots. Hold Q / LT to see nearby scent. L / B rolls low; keep moving to crawl clear."));
-            w.Signs.Add(new Sign(21, 1, "COIL INTO THE CANOPY", "Claw the blue flower. Hold SHIFT / X, aim up, then release to reach the branches. Golden paths remember wild places."));
+            w.Signs.Add(new Sign(21, 1, "COIL INTO THE CANOPY", "Climb onto the roots from either end. Hold SHIFT / X, aim up, then release toward the branches. Claw blue flowers to wake crossings."));
             w.Signs.Add(new Sign(39, 1, "BORROW A LITTLE SPRING", "A pink flower restores your pounce in midair. Follow the upper branches back toward the memory."));
             w.Signs.Add(new Sign(68, 1, "LET HIM COMMIT", "The bristleback guards the clearing. Vault his charge, roll through at the right moment, or take the branches above."));
         }

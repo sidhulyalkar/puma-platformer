@@ -174,7 +174,7 @@ namespace Wildbound.Tests
         {
             var g = Start(); Walk(g, 10.8f); Walk(g, 16.5f, true);
             Check(g.World.Places[0].Found && g.Player.LowProfile, "Root hollow did not require low traversal");
-            Walk(g, 21.5f); Leap(g, 25, 5.2f); Leap(g, 31.5f, 8.1f); Leap(g, 41, 11.1f);
+            Walk(g, 21.5f); Leap(g, 18, 2.95f); Leap(g, 25, 5.2f); Leap(g, 31.5f, 8.1f); Leap(g, 41, 11.1f);
             Drop(g, 31.5f, 10.65f); Drop(g, 28, 1); Walk(g, 23); FinishRoute(g, 0);
         }
         private static void GrottoRoute()
@@ -186,7 +186,7 @@ namespace Wildbound.Tests
         private static void SkyRoute()
         {
             var g = Start(2); Walk(g, 9); bool spring = false;
-            for (int i = 0; i < 240 && !spring; i++) { g.Step(new PlayerInput { Move = 1, JumpHeld = true }); spring = (g.Events & GameEvent.Spring) != 0; }
+            for (int i = 0; i < 240 && !spring; i++) { g.Step(new PlayerInput { Move = Steer(g, 11), JumpPressed = i == 0, JumpHeld = true }); spring = (g.Events & GameEvent.Spring) != 0; }
             Check(spring, "Route did not use the spring");
             Drop(g, 17, 5.7f); Leap(g, 26, 9.7f); Leap(g, 38, 13.7f); Leap(g, 48, 17.7f);
             Leap(g, 52.5f, 18.6f); Leap(g, 61, 21.7f); Drop(g, 67, 18.85f); Drop(g, 73, 1); Walk(g, 60); FinishRoute(g, 1);
