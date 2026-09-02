@@ -6,7 +6,11 @@ namespace Wildbound.Tests
 {
     public static class SimulationCases
     {
-        static SimulationCases() { foreach (var pair in CombatCases.All) All.Add(pair.Key, pair.Value); }
+        static SimulationCases()
+        {
+            foreach (var pair in CombatCases.All) All.Add(pair.Key, pair.Value);
+            foreach (var pair in MoontrailCases.All) All.Add(pair.Key, pair.Value);
+        }
         public static readonly Dictionary<string, Action> All = new Dictionary<string, Action>
         {
             { "Spawn settles without falling", Spawn },
@@ -217,7 +221,7 @@ namespace Wildbound.Tests
                 for (int tick = 0; tick < 3600; tick++)
                 {
                     var p = g.Player;
-                    var input = new PlayerInput { Move = p.Position.X < 74 ? 1 : p.Position.X > 76 ? -1 : 0, JumpHeld = true, AimY = 1, InteractPressed = true };
+                    var input = new PlayerInput { Move = p.Position.X < 74 ? 1 : p.Position.X > 76 ? -1 : 0, JumpHeld = true, AimY = 1, InteractPressed = (p.Position - g.World.Exit).Length < 2.2f };
                     if (p.Grounded && p.PounceReady && !p.Charging) { input.PouncePressed = true; chargeTicks = 0; }
                     if (p.Charging) { input.PounceHeld = true; if (++chargeTicks >= 80) { input.PounceHeld = false; input.PounceReleased = true; } }
                     if (p.Wall != 0 && p.Velocity.Y < 0) input.JumpPressed = true;

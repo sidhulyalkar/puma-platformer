@@ -6,14 +6,15 @@ namespace Wildbound.Core
     [Serializable]
     public sealed class JourneySave
     {
-        public int Version = 1, Biome, FurthestBiome;
+        public int Version = 1, Biome, FurthestBiome, Waystones;
         public int[] Collected = new int[3], Checkpoints = { -1, -1, -1 };
         public bool Completed;
         public void Sanitize()
         {
-            if (Version != 1) { Biome = FurthestBiome = 0; Collected = new int[3]; Checkpoints = new[] { -1, -1, -1 }; Completed = false; }
+            if (Version != 1) { Biome = FurthestBiome = Waystones = 0; Collected = new int[3]; Checkpoints = new[] { -1, -1, -1 }; Completed = false; }
             Version = 1; Biome = Math.Max(0, Math.Min(2, Biome));
             FurthestBiome = Math.Max(Biome, Math.Max(0, Math.Min(2, FurthestBiome)));
+            Waystones = Waystones < 0 ? 0 : Waystones & 7;
             if (Collected == null || Collected.Length != 3) Collected = new int[3];
             if (Checkpoints == null || Checkpoints.Length != 3) Checkpoints = new[] { -1, -1, -1 };
             for (int i = 0; i < 3; i++) { Collected[i] &= (1 << 13) - 1; Checkpoints[i] = Math.Max(-1, Math.Min(1, Checkpoints[i])); }
@@ -34,16 +35,45 @@ namespace Wildbound.Core
         public int Deaths { get; private set; }
         public float Recovery { get; private set; }
         public bool Paused;
+        private WorldDefinition outsideWorld;
+        private V2 outsidePosition;
+        private float outsideTime;
+        public bool InTrial { get { return World.Trial != null; } }
+        public bool WaystoneRestored(int biome) { return biome >= 0 && biome < 3 && (Save.Waystones & (1 << biome)) != 0; }
+        public int WaystoneCount { get { return (Save.Waystones & 1) + ((Save.Waystones >> 1) & 1) + ((Save.Waystones >> 2) & 1); } }
         public GameSession(JourneySave save = null)
         {
             Save = save ?? new JourneySave(); Save.Sanitize(); LoadWorld(Save.Biome);
         }
         public void LoadWorld(int biome)
         {
+            outsideWorld = null;
             World = WorldDefinition.Create(biome); Save.Biome = biome; Save.FurthestBiome = Math.Max(Save.FurthestBiome, biome); Time = Recovery = 0;
             for (int i = 0; i < World.Pickups.Count; i++) World.Pickups[i].Collected = (Save.Collected[biome] & (1 << i)) != 0;
             Player = new PumaMotor(CheckpointPosition());
             Combat.ResetForRespawn(); Projectiles.Clear();
+            RestoreLightBridges();
+        }
+        private void RestoreLightBridges()
+        {
+            if (!WaystoneRestored(Save.Biome) || InTrial) return;
+            foreach (var bloom in World.Blooms) bloom.Awakened = true;
+            foreach (var platform in World.Platforms) if (platform.Surface == Surface.Moonbridge) platform.Enabled = true;
+        }
+        public bool TryEnterTrial()
+        {
+            if (InTrial || Paused || Recovery > 0 || !Player.Grounded || (Player.Position - Moontrial.Entrance).Length > 1.6f) return false;
+            outsideWorld = World; outsidePosition = Player.Position; outsideTime = Time;
+            World = Moontrial.Create(Save.Biome); Time = Recovery = 0;
+            Player.Reset(World.Spawn); Combat.ResetForRespawn(); Projectiles.Clear();
+            Events |= GameEvent.TrialTravel; return true;
+        }
+        public bool LeaveTrial()
+        {
+            if (!InTrial || outsideWorld == null) return false;
+            World = outsideWorld; outsideWorld = null; Time = outsideTime; Recovery = 0;
+            Player.Reset(outsidePosition); Combat.ResetForRespawn(); Projectiles.Clear();
+            RestoreLightBridges(); Events |= GameEvent.TrialTravel; return true;
         }
         public bool TravelTo(int biome)
         {
@@ -52,6 +82,7 @@ namespace Wildbound.Core
         }
         private V2 CheckpointPosition()
         {
+            if (InTrial) return World.Spawn;
             int c = Save.Checkpoints[Save.Biome];
             return c >= 0 && c < World.Checkpoints.Count ? World.Checkpoints[c] : World.Spawn;
         }
@@ -59,6 +90,7 @@ namespace Wildbound.Core
         {
             Player.Reset(CheckpointPosition()); Combat.ResetForRespawn(); Projectiles.Clear();
             foreach (var enemy in World.Enemies) enemy.ReturnHome();
+            if (InTrial && World.Trial.Balance != null && !World.Trial.Balance.Attuned) World.Trial.Balance.Charge = 0;
             Recovery = .3f; Deaths++; Events |= GameEvent.Respawn;
         }
         public void SetPaused(bool paused) { Paused = paused; Player.CancelInput(); Combat.CancelQueue(); }
@@ -90,6 +122,7 @@ namespace Wildbound.Core
             Time += dt;
             foreach (var platform in World.Platforms) platform.Update(Time);
             foreach (var bloom in World.Blooms) bloom.GlowTime = Math.Max(0, bloom.GlowTime - dt);
+            if (InTrial) World.Trial.Advance(dt);
             if (Player.LowProfile && Player.RollTime <= 0 && !WorldCollision.OverlapsSolid(World,
                 new Box(Player.Position.X - PumaMotor.Width / 2, Player.Position.Y, PumaMotor.Width, PumaMotor.Height)))
                 Player.LowProfile = false;
@@ -101,6 +134,7 @@ namespace Wildbound.Core
             foreach (var enemy in World.Enemies) enemy.Step(World, Player, Projectiles, dt);
             bool wasGrounded = Player.Grounded;
             V2 delta = Player.Velocity * dt;
+            if (InTrial) delta.X += World.Trial.WindDrift(Player, Time) * dt;
             // Substeps bound travel below the thinnest authored collider, including fast pounces.
             int steps = Math.Max(1, (int)Math.Ceiling(Math.Max(Math.Abs(delta.X), Math.Abs(delta.Y)) / .12f));
             Player.Grounded = false; Player.GroundIndex = -1;
@@ -142,6 +176,26 @@ namespace Wildbound.Core
                 if (!float.IsPositiveInfinity(wallFraction) || hit || shot.Life <= 0) Projectiles.RemoveAt(i);
             }
             if (Combat.Health <= 0) { Respawn(); return; }
+            if (InTrial)
+            {
+                var trial = World.Trial;
+                if (trial.Balance != null) Events |= trial.Balance.Step(World, Player, Combat, Time, dt);
+                if (input.InteractPressed)
+                {
+                    if (Player.Grounded && (Player.Position - Moontrial.Entrance).Length < 1.6f) { LeaveTrial(); return; }
+                    if ((Player.Position - trial.Sanctuary).Length < 1.8f)
+                    {
+                        if (!trial.Ready(World)) Events |= GameEvent.ObjectiveBlocked;
+                        else
+                        {
+                            bool first = !WaystoneRestored(Save.Biome);
+                            Save.Waystones |= 1 << Save.Biome;
+                            LeaveTrial(); if (first) Events |= GameEvent.Waystone;
+                        }
+                    }
+                }
+                return; // Trial progress must never overwrite the outside world's pickup/checkpoint IDs.
+            }
             for (int i = 0; i < World.Pickups.Count; i++)
             {
                 var p = World.Pickups[i];
@@ -152,6 +206,7 @@ namespace Wildbound.Core
             for (int i = 0; i < World.Checkpoints.Count; i++)
                 if (Save.Checkpoints[Save.Biome] != i && (Player.Position - World.Checkpoints[i]).Length < 1)
                 { Save.Checkpoints[Save.Biome] = i; Combat.Heal(); Events |= GameEvent.Checkpoint; }
+            if (input.InteractPressed && TryEnterTrial()) return;
             if (input.InteractPressed && (Player.Position - World.Exit).Length < 2.2f)
             {
                 if (Save.Biome < 2) { LoadWorld(Save.Biome + 1); Events |= GameEvent.Portal; }

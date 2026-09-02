@@ -87,7 +87,9 @@ namespace Wildbound.Unity
                 Shape("beacon bud", disc, new Vector2(p.X, p.Y + 1.6f), new Vector2(.22f, .22f), light, 12);
             }
             BuildCombatArt();
-            BuildPortal(game.Session.World.Exit); BuildPuma();
+            BuildTrialArt();
+            if (!game.Session.InTrial) BuildPortal(game.Session.World.Exit);
+            BuildPuma();
             for (int i = 0; i < 72; i++)
             {
                 var r = Shape("spark", disc, Vector2.zero, Vector2.one * .1f, light, 25); r.enabled = false;
@@ -140,6 +142,14 @@ namespace Wildbound.Unity
                 Shape("moon edge", square, new Vector2(0, h / 2), new Vector2(w, .06f), light, 9, root);
                 for (int i = 0; i < w; i++) Shape("moon rune", disc, new Vector2(i - w / 2 + .5f, 0), Vector2.one * .1f, light, 10, root);
             }
+            else if (p.Surface == Surface.RootGate)
+            {
+                for (float y = -h / 2; y < h / 2; y += .55f)
+                {
+                    Shape("braided root", square, new Vector2(0, y), new Vector2(w * 1.3f, .13f), Hex("dbac86"), 9, root).transform.localRotation = Quaternion.Euler(0, 0, 28);
+                    Shape("root seam", square, new Vector2(0, y + .2f), new Vector2(w * .75f, .045f), light, 10, root);
+                }
+            }
             else if (p.Surface == Surface.Spring)
             {
                 for (int i = -2; i <= 2; i++)
@@ -160,7 +170,7 @@ namespace Wildbound.Unity
                 }
                 for (int i = 0; i < w / 1.5f; i++) Shape("stone fleck", square, new Vector2(Range(-w / 2 + .2f, w / 2 - .2f), Range(-h / 2 + .1f, h / 2 - .25f)), new Vector2(.18f, .05f), distant, 6, root);
             }
-            if (p.Surface == Surface.Moving)
+            if (p.Surface == Surface.Moving || p.Surface == Surface.Balance)
                 Shape("floating heart", disc, new Vector2(0, -h / 2 - .2f), new Vector2(.3f, .3f), light, 7, root);
         }
         private void BuildPortal(V2 p)
@@ -205,7 +215,7 @@ namespace Wildbound.Unity
         {
             if (cameraView == null) return;
             var p = game.Session.Player.Position;
-            cameraView.transform.position = new Vector3(Mathf.Clamp(p.X + 3, 8, 73), Mathf.Clamp(p.Y + 4.1f, 5.7f, 20), -10);
+            cameraView.transform.position = new Vector3(Mathf.Clamp(p.X + 3, 8, game.Session.World.CameraMaxX), Mathf.Clamp(p.Y + 4.1f, 5.7f, 20), -10);
             cameraVelocity = Vector3.zero;
         }
         public void React(GameEvent e)
@@ -221,13 +231,19 @@ namespace Wildbound.Unity
             if (game == null || cat == null) return;
             var session = game.Session; var p = session.Player;
             float dt = Time.deltaTime, t = session.Time;
-            for (int i = 0; i < platforms.Count; i++) platforms[i].position = Point(session.World.Platforms[i].Bounds.Center);
+            for (int i = 0; i < platforms.Count; i++)
+            {
+                var platform = session.World.Platforms[i];
+                platforms[i].position = Point(platform.Bounds.Center);
+                if (platform.Surface == Surface.RootGate) platforms[i].gameObject.SetActive(platform.Enabled);
+            }
             for (int i = 0; i < pickups.Count; i++)
             {
                 var pickup = session.World.Pickups[i]; pickups[i].gameObject.SetActive(!pickup.Collected);
                 pickups[i].position = Point(pickup.Position) + Vector3.up * (game.ReducedMotion ? 0 : Mathf.Sin(t * 2.3f + i) * .12f);
             }
             UpdateCombatArt();
+            UpdateTrialArt();
             for (int i = 0; i < checkpoints.Count; i++) checkpoints[i].color = session.Save.Checkpoints[session.Save.Biome] == i ? Hex("fff6d8") : distant;
             cat.position = Point(p.Position);
             float crouch = p.LowProfile ? .42f : p.Stalking ? .22f : p.Charging ? p.Charge * .28f : 0;
@@ -255,7 +271,7 @@ namespace Wildbound.Unity
                     Color c = s.Renderer.color; c.a = Mathf.Max(0, s.Life / s.MaxLife); s.Renderer.color = c;
                 }
             }
-            var target = new Vector3(Mathf.Clamp(p.Position.X + p.Facing * 2.8f, 8, 73), Mathf.Clamp(p.Position.Y + 4.1f, 5.7f, 20), -10);
+            var target = new Vector3(Mathf.Clamp(p.Position.X + p.Facing * 2.8f, 8, session.World.CameraMaxX), Mathf.Clamp(p.Position.Y + 4.1f, 5.7f, 20), -10);
             cameraView.transform.position = Vector3.SmoothDamp(cameraView.transform.position, target, ref cameraVelocity, game.ReducedMotion ? .1f : .23f, Mathf.Infinity, dt);
             if (!game.ReducedMotion && shake > 0 && !session.Paused) cameraView.transform.position += new Vector3(Mathf.Sin(t * 111) * shake * .35f, 0, 0);
             far.localPosition = new Vector3(cameraView.transform.position.x * .75f, cameraView.transform.position.y * .4f, 0);

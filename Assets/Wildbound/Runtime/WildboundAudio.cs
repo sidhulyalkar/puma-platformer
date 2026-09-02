@@ -21,7 +21,9 @@ namespace Wildbound.Unity
         public void React(GameEvent events)
         {
             if (game.Muted) return;
-            if ((events & GameEvent.Bloom) != 0) source.PlayOneShot(moonwake, .26f);
+            if ((events & (GameEvent.Bloom | GameEvent.Waystone | GameEvent.Balance)) != 0) source.PlayOneShot(moonwake, .26f);
+            if ((events & GameEvent.Moonbell) != 0) source.PlayOneShot(bell, .25f);
+            if ((events & GameEvent.Breach) != 0) source.PlayOneShot(thump, .3f);
             if ((events & GameEvent.Block) != 0) source.PlayOneShot(armor, .17f);
             else if ((events & GameEvent.Hit) != 0) source.PlayOneShot(thump, .24f);
             if ((events & GameEvent.Hurt) != 0) source.PlayOneShot(hurt, .24f);
