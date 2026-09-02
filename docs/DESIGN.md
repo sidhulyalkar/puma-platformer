@@ -4,9 +4,9 @@ The fantasy is a curious, powerful female puma in a world worth exploring. Movem
 
 The nocturnal setting is part of play. Warm fur and pale terrain edges identify the puma and safe landings. Amber warnings identify committed attacks. Blue moonblooms react to her claws, revealing bridges and interrupting moths. Darkness supplies atmosphere without requiring players to navigate invisible hazards.
 
-## Implemented in v0.3
+## Implemented in v0.4
 
-Three regions share a tested route spine with different night palettes, scenery, and additional upper platforms. They establish mechanics and progression; they are not yet three fully bespoke levels. The new Waystone Trials add three separately authored objective rooms, entered from the region’s starting crescent. Clawing a bloom, balancing in wind, rebounding from a moonbell, and breaching roots create physical goals with permanent bridge rewards. See [Moontrail strategy and critique](MOONTRAIL.md).
+Three separately authored outside regions now combine a root-and-branch loop, a tall lantern chamber, and a chain of sky islands. Six wild places reward local scent tracking with lasting golden return paths. Their discoveries and the existing memory pickups give optional routes concrete destinations. The Waystone Trials retain their separately authored objective rooms and blue-bridge rewards. See [Living Trails](LIVING_TRAILS.md) and [Moontrail strategy](MOONTRAIL.md).
 
 All terrain is rectangular and solid except dormant moonbridges and breached root gates. Slopes, one-way platforms, ledge grabs, and arbitrary Unity physics interactions remain outside this version.
 
@@ -43,9 +43,9 @@ Movement tutorial text remains proximity-based. The trial objective card and jou
 
 1. **Unity qualification:** clean import, run EditMode and PlayMode, inspect the actual scene, try every move and counter, collect each memory, and build WebGL. Resolve real console and visual issues before extending scope.
 2. **Combat and movement feel:** record claw timing, small jumps, full coils, air-dash chains, low-ceiling rolls, and enemy warnings. Check whether the falling rebound feels earned and whether roll recovery is readable. Tune from observation.
-3. **One showcase night region:** replace the canopy's repeated route spine with a handcrafted loop: safe lower trail, fast hunting route, and a moonbloom detour that reconnects to a checkpoint. Make revealed paths visible from their activation point and give their destinations a reason to visit.
+3. **Critique the authored regions:** play the Canopy loop, Grotto switchback, and Sky islands. Verify that players see a destination and a landing before committing. Tune the discovery paths using actual play; expand the strongest interaction afterward.
 4. **Light identity:** assess how well scent rings, moonwake, moth reactions, wind-perch gauges, bell cues, and glowing warnings explain themselves. Only then consider light-carrying prey, optional darkness routes, or a light-reactive guardian. These are future ideas, not shipped mechanics.
-5. **Distinct worlds:** give each region its own geometry and a new use of the same moves. Test bridge and hidden-memory reachability deliberately; the current exit tests do not prove every scenic route.
+5. **World expansion:** the new route tests cover wild places, memories, and returns alongside exits. Human-test every mote and scenic approach next. Cinder Ravine and Frostglass Ridge remain future candidates after the current regions are comfortable to navigate.
 6. **Arcade release:** browser and controller qualification, measured download/frame-time/memory budgets, an actual-game trailer, and integration into sidhulyalkar.com.
 
 The custom rectangular solver owns movement and must not be mixed with Rigidbody2D motion without redefining collision ownership. Art, audio cues, and move implementations are original. There is no background music, boss encounter, dynamic shadow simulation, mobile control scheme, or control remapping yet.

@@ -73,4 +73,4 @@ No reference game's code, artwork, audio, levels, names, or tuning has been impo
 
 Unity compilation/rendering, actual gamepad handling, audio, and WebGL execution remain unverified in this environment. In the first real playtest, evaluate whether players notice the crescent, understand why a perch is not charging, recognize the bell's downward cue, and see where to go after the rebound. Check arc/hitbox alignment and how often the objective panel covers a landing.
 
-The main regions still share their earlier route spine. These three rooms are a focused step toward distinct authored spaces, not a finished metroidvania. The next useful expansion should come from the weakest observed trial: improve its teaching and geometry, then build a larger loop around the successful interaction. New currencies, equipment trees, and bosses should wait until those combinations feel good in the actual game.
+The outside regions have since been rebuilt in [Living Trails](LIVING_TRAILS.md). The trials remain focused practice spaces with separate progress and rewards. Critique their teaching in the actual game before adding new currencies, equipment trees, or bosses.
