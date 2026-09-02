@@ -8,5 +8,6 @@
     <Compile Include="../Assets/Wildbound/Core/*.cs" />
     <Compile Include="../Assets/Wildbound/Tests/EditMode/SimulationCases.cs" />
     <Compile Include="../Assets/Wildbound/Tests/EditMode/CombatCases.cs" />
+    <Compile Include="../Assets/Wildbound/Tests/EditMode/MoontrailCases.cs" />
   </ItemGroup>
 </Project>

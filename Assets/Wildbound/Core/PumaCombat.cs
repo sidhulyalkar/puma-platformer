@@ -79,7 +79,8 @@ namespace Wildbound.Core
             if (input.AttackPressed) queuedAttack = .2f;
             if (Busy && !Recovering) input.RollPressed = input.DashPressed = false;
             else if ((input.RollPressed && player.Grounded && player.RollCooldown <= 0)
-                || (input.DashPressed && player.CanDash && !player.LowProfile)) Cancel();
+                || (input.DashPressed && player.CanDash && !player.LowProfile)
+                || (Recovering && input.PouncePressed && player.PounceReady && !player.LowProfile)) Cancel();
 
             if (input.RollPressed || player.RollTime > 0 || player.LowProfile)
             { queuedAttack = 0; input.DashPressed = false; return GameEvent.None; }
@@ -91,8 +92,8 @@ namespace Wildbound.Core
             if (queuedAttack > 0 && !Busy && player.DashTime <= 0)
             {
                 ClawMove move;
-                if (player.PounceTime > 0) move = ClawMove.PounceRake;
-                else if (!player.Grounded && input.AimY < -.3f) move = ClawMove.DownRake;
+                if (!player.Grounded && input.AimY < -.3f) move = ClawMove.DownRake;
+                else if (player.PounceTime > 0) move = ClawMove.PounceRake;
                 else if (input.AimY > .3f) move = ClawMove.RisingRake;
                 else
                 {
@@ -171,6 +172,12 @@ namespace Wildbound.Core
                 foreach (var enemy in world.Enemies)
                     if (enemy.Kind == EnemyKind.LanternMoth && (enemy.Position - bloom.Position).Length < 5
                         && WorldCollision.ClearLine(world, bloom.Position, enemy.Bounds.Center)) enemy.Stun(1.2f);
+            }
+            if (world.Trial != null)
+            {
+                var mechanism = world.Trial.ResolveStrike(world, player, this);
+                events |= mechanism;
+                if (mechanism != GameEvent.None) LastImpact = world.Trial.LastImpact;
             }
             return events;
         }

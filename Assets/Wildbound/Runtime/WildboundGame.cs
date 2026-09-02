@@ -70,20 +70,25 @@ namespace Wildbound.Unity
         private void FixedUpdate()
         {
             if (!Playing || Session.Paused || ShowEnding) return;
-            int biome = Session.Save.Biome;
+            var world = Session.World;
             bool completedBefore = Session.Save.Completed;
             Session.Step(pending);
             pending.JumpPressed = pending.PouncePressed = pending.PounceReleased = pending.InteractPressed = false;
             pending.AttackPressed = pending.DashPressed = pending.RollPressed = false;
             GameEvent e = Session.Events;
-            if (Session.Save.Biome != biome) { view.Rebuild(); Announce(Session.World.Subtitle); }
+            if (Session.World != world) { view.Rebuild(); Announce(Session.World.Subtitle); }
             if ((e & GameEvent.Respawn) != 0) { view.SnapCamera(); Announce("A soft landing. Your discoveries are still yours."); }
             if ((e & GameEvent.Checkpoint) != 0) Announce("Trail remembered.");
             if ((e & GameEvent.Secret) != 0) Announce(Session.World.Memory, 7);
             if ((e & GameEvent.Bloom) != 0) Announce("Moonwake. A bridge of light answers her claws.");
             if ((e & GameEvent.Hunt) != 0) Announce("Prey caught. A heart restored; ready to leap again.");
             if ((e & GameEvent.Block) != 0) Announce("Armored front. Get above or behind him.", 2);
-            if ((e & (GameEvent.Collect | GameEvent.Secret | GameEvent.Checkpoint | GameEvent.Portal)) != 0) MarkSave();
+            if ((e & GameEvent.Balance) != 0) Announce("Steady paws. The wind rests, and a crossing wakes.");
+            if ((e & GameEvent.Moonbell) != 0) Announce("The bell answers. Pounce and air dash are ready again.", 2);
+            if ((e & GameEvent.Breach) != 0) Announce("Roots part. Find your opening beyond them.");
+            if ((e & GameEvent.ObjectiveBlocked) != 0 && Session.InTrial) Announce(Session.World.Trial.NextGoal(Session.World), 5);
+            if ((e & GameEvent.Waystone) != 0) Announce("Waystone restored. This region's light bridges now stay awake.", 7);
+            if ((e & (GameEvent.Collect | GameEvent.Secret | GameEvent.Checkpoint | GameEvent.Portal | GameEvent.Waystone)) != 0) MarkSave();
             if (!completedBefore && Session.Save.Completed) { ShowEnding = true; Session.SetPaused(true); }
             sound.React(e); view.React(e);
         }
@@ -100,6 +105,11 @@ namespace Wildbound.Unity
             view.Rebuild(); Resume(); MarkSave(); Announce(Session.World.Subtitle);
         }
         public void Resume() { ShowMap = ShowControls = ShowEnding = false; Session.SetPaused(false); pending = new PlayerInput(); }
+        public void LeaveTrial()
+        {
+            if (!Session.LeaveTrial()) return;
+            view.Rebuild(); Resume(); Announce("Back on your trail. You can try the waystone again.");
+        }
         private void PauseForOverlay() { Session.SetPaused(ShowMap || ShowControls); pending = new PlayerInput(); }
         public void NewJourney()
         {

@@ -10,9 +10,10 @@ namespace Wildbound.Core
             return false;
         }
 
-        public static bool ClearLine(WorldDefinition world, V2 from, V2 to)
+        public static bool ClearLine(WorldDefinition world, V2 from, V2 to, int ignorePlatform = -1)
         {
-            foreach (var p in world.Platforms) if (p.Enabled && SegmentHits(from, to, p.Bounds)) return false;
+            for (int i = 0; i < world.Platforms.Count; i++)
+                if (i != ignorePlatform && world.Platforms[i].Enabled && SegmentHits(from, to, world.Platforms[i].Bounds)) return false;
             return true;
         }
 
