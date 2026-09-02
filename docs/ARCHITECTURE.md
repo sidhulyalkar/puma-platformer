@@ -16,40 +16,32 @@ Positions represent the center of the player's feet. Units increase right and up
 
 Each tick advances timers, carries the player, processes attack intent, prepares movement, applies attack impulses, and advances enemies. Every player motion substep resolves terrain, claw/body strikes, hazards, and enemy contact. A successful falling strike interrupts descent immediately. Projectiles then use swept intersections against terrain and the player; the nearest intersection wins. Shots have a three-second lifetime and a global cap of 24.
 
-Attacks have windup, active, and recovery intervals. Each sequence records targets already hit, preventing per-frame damage. Strike boxes have terrain line-of-sight checks and generous reach; their procedural arc graphics need human alignment review. Roll/dash and a ready pounce may cancel recovery but cannot erase a committed windup. Damage interrupts attacks and grants a grace interval. Terrain hazards always trigger recovery, regardless of a dodge.
+Attacks have windup, active, and recovery intervals. Each sequence records targets already hit, preventing per-frame damage. Strike boxes have terrain line-of-sight checks and generous reach; their procedural arc graphics need human alignment review. Roll/dash may cancel recovery but cannot erase a committed windup. Damage interrupts attacks and grants a grace interval. Terrain hazards always trigger recovery, regardless of a dodge.
 
 Moving platforms move horizontally and carry grounded players through the same horizontal collision solver. Vertical crushers, slopes, rotation, and moving-platform inertia on takeoff are not implemented.
 
 `GameEvent` is a per-step bitmask. The Unity host handles it immediately in `FixedUpdate`, so render frames cannot swallow multiple physics-step events. Input edges are latched in `Update` and consumed once per fixed tick; held states persist. Pausing clears queued input and cancels pounce charge while freezing the current attack/enemy phase. Focus loss pauses the session. Missing/disconnected input devices clear held movement while save/toast timers continue.
 
-## Trial rooms and mechanisms
-
-`Moontrial.Create` authors three optional rooms. `BalancePerch` tracks centered stalking and countersteering against deterministic wind drift; `Moonbell` validates a downward strike and refreshes traversal; `RootGate` disables a real terrain collider after a visible dash-claw hit. Mechanism state determines the current objective and completion count. The journal reads those same values.
-
-`GameSession.TryEnterTrial` requires a nearby grounded interaction and suspends the outside world, position, and platform clock. The trial has a separate world object but shares movement/combat rules. `LeaveTrial` restores the suspended world and clears projectiles/attack state. The trial branch returns before outside pickup/checkpoint writes, preventing local IDs from corrupting the journey save. Death returns to the trial spawn while retaining completed mechanisms; partial balance charge resets.
-
-Wind adds a bounded horizontal displacement through the existing substep solver while grounded on an unattuned perch. It is not a rotation/sloped collider. The balance ring uses the platform's current position; its lantern fills only while grounded, centered, stalking, moving slowly, and neither charging nor attacking. Moonbell rebounds stop the current descent substep immediately. Root-gate sight checks target the nearest visible point on the gate, ignoring only the gate's own collider.
-
 ## Rendering and audio
 
-`WorldView` builds a single scene's cut-paper shapes using four generated textures and one shared resource shader/material. Its `WorldCombatView` partial file renders creature silhouettes, telegraphs, scent rings, moonblooms, bridge visibility, and claw arcs. `WorldTrialView` adds crescent entrances, sanctuary seals, balance gauges/wind ribbons, and rebound bells. Room changes are detected by world identity, including changes within the same biome. Each world supplies its horizontal camera bound. Glow uses translucent sprite layers; there are no dynamic light/shadow physics or URP dependencies. The puma and interactive edges use bright accents against three night palettes.
+`WorldView` builds a single scene's cut-paper shapes using four generated textures and one shared resource shader/material. Its `WorldCombatView` partial file renders creature silhouettes, telegraphs, scent rings, moonblooms, bridge visibility, and claw arcs. Glow uses translucent sprite layers; there are no dynamic light/shadow physics or URP dependencies. The puma and interactive edges use bright accents against three night palettes.
 
 Rebuilding a region disables the old root immediately and destroys it at frame end. Particles, 24 projectile sprites, and 36 claw segments are pooled. Art uses seeded decoration placement; renderer randomness never changes the simulation. The puma is articulated from shapes, with charge compression, paw gait, head motion, a long tail, and roll/stalk/attack poses. Reduced motion disables camera shake and limits impact particles.
 
-`WildboundHud` is a small immediate-mode prototype UI with a virtual 1280 × 720 layout. Replace it with a production UI only after the flow is stable. The same interface provides title, field guide, contextual lessons, pause, map/return travel, mechanism journal, trial strategy, and completion.
+`WildboundHud` is a small immediate-mode prototype UI with a virtual 1280 × 720 layout. Replace it with a production UI only after the flow is stable. The same interface provides title, field guide, contextual lessons, pause, map/return travel, and completion.
 
 `WildboundAudio` creates nine short clips once, including a filtered-noise claw whoosh and tone cues for armor, damage, hunting, and moonwake. It requires no audio downloads. There is no background music in this slice.
 
 ## Persistence
 
-`JourneySave` stores a version, current/furthest region, one pickup bitmask per region, checkpoint indices, three waystone bits, and completion. `Sanitize` bounds or resets malformed data. IDs are the pickup positions in each region's list; changing their order requires a save migration or a version bump. There are currently 13 pickups per region and bit zero is the memory.
+`JourneySave` stores a version, current/furthest region, one pickup bitmask per region, checkpoint indices, and completion. `Sanitize` bounds or resets malformed data. IDs are the pickup positions in each region's list; changing their order requires a save migration or a version bump. There are currently 13 pickups per region and bit zero is the memory.
 
-`PlayerPrefs` serializes the save as JSON, debounced after progress changes and flushed on quit/focus loss. The v1 save schema remains compatible: health, instinct, hunt counts, enemies, activated moonblooms, and transient simulation state are not saved. A fall clears attacks/projectiles, restores vitality, and returns surviving enemies home; defeated wildlife and awakened bridges remain as they were during that visit. Region travel reconstructs wildlife, blooms, and platform phases. Hunt/defeat totals last for the current game session only. The optional `Waystones` integer defaults to zero for older v1 saves. Each completion adds one bit and emits a save event only on the first restoration. Loading or returning to a restored region activates its main-world moonbridges. Partial trial mechanisms are not serialized, so a reload resumes at the outside checkpoint. Online accounts and telemetry are absent.
+`PlayerPrefs` serializes the save as JSON, debounced after progress changes and flushed on quit/focus loss. The v1 save schema remains compatible: health, instinct, hunt counts, enemies, activated moonblooms, and transient simulation state are not saved. A fall clears attacks/projectiles, restores vitality, and returns surviving enemies home; defeated wildlife and awakened bridges remain as they were during that visit. Region travel reconstructs wildlife, blooms, and platform phases. Hunt/defeat totals last for the current game session only. Online accounts and telemetry are absent.
 
 ## Editing safely
 
 - Tune movement in `MovementTuning` first, then replay regression routes.
-- Edit the outside routes in `WorldDefinition.Create` and trial rooms in `Moontrial.Create`. Re-run the corresponding real-input completion routes after geometry changes.
+- Edit platform, pickup, checkpoint, and sign positions in `WorldDefinition.Create`.
 - Tune strike intervals in `PumaCombat.ForMove`; tune enemy tells/commitment/recovery in `Enemies.cs`. Keep visible telegraphs and vulnerable windows when changing speeds.
 - A moonbridge's `LightSource` is an index into `World.Blooms`; its initial `Enabled` must be false. Put dazzle encounters within five units of their bloom with clear sight lines.
 - Keep checkpoint spawns above safe supporting surfaces and outside hazards; the tests check all nine initial/checkpoint combinations.

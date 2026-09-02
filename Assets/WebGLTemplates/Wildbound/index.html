@@ -21,7 +21,7 @@
     <canvas id="unity-canvas" width="1280" height="720" tabindex="0" aria-label="Puma Wildbound platform adventure. Keyboard or gamepad required."></canvas>
     <section id="loading" aria-live="polite">
       <h1>WILDBOUND</h1><p>Quiet paws. A wild heart after dark.</p>
-      <p id="hint">Keyboard or gamepad required. A / D move · SPACE jump · SHIFT pounce · J claw · K dash-claw · L roll · Q stalk. E enters a waystone trial. Press C for controls and trial strategy.</p>
+      <p id="hint">Keyboard or gamepad required. A / D move · SPACE jump · SHIFT pounce · J claw · K dash-claw · L roll · Q stalk. Press C in-game for the field guide.</p>
       <button id="start" type="button">Enter the wild</button>
       <progress id="progress" max="1" value="0" aria-label="Loading game" hidden></progress>
       <p id="status"></p>
@@ -39,7 +39,7 @@
       script.onerror=()=>{script.remove();failure('Check your connection and retry.');};
       script.onload=()=>createUnityInstance(canvas,{
         dataUrl:'Build/{{{ DATA_FILENAME }}}',frameworkUrl:'Build/{{{ FRAMEWORK_FILENAME }}}',codeUrl:'Build/{{{ CODE_FILENAME }}}',
-        streamingAssetsUrl:'StreamingAssets',companyName:'Sid Hulyalkar',productName:'Puma: Wildbound',productVersion:'0.3.0',
+        streamingAssetsUrl:'StreamingAssets',companyName:'Sid Hulyalkar',productName:'Puma: Wildbound',productVersion:'0.2.0',
         devicePixelRatio:Math.min(window.devicePixelRatio||1,2)
       },value=>{progress.value=value;}).then(game=>{instance=game;loading.hidden=true;fullscreen.hidden=false;canvas.focus();}).catch(()=>failure('WebGL 2 and a supported desktop browser are required.'));
       document.body.appendChild(script);

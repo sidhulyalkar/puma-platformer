@@ -4,11 +4,9 @@ The fantasy is a curious, powerful female puma in a world worth exploring. Movem
 
 The nocturnal setting is part of play. Warm fur and pale terrain edges identify the puma and safe landings. Amber warnings identify committed attacks. Blue moonblooms react to her claws, revealing bridges and interrupting moths. Darkness supplies atmosphere without requiring players to navigate invisible hazards.
 
-## Implemented in v0.3
+## Implemented in v0.2
 
-Three regions share a tested route spine with different night palettes, scenery, and additional upper platforms. They establish mechanics and progression; they are not yet three fully bespoke levels. The new Waystone Trials add three separately authored objective rooms, entered from the region’s starting crescent. Clawing a bloom, balancing in wind, rebounding from a moonbell, and breaching roots create physical goals with permanent bridge rewards. See [Moontrail strategy and critique](MOONTRAIL.md).
-
-All terrain is rectangular and solid except dormant moonbridges and breached root gates. Slopes, one-way platforms, ledge grabs, and arbitrary Unity physics interactions remain outside this version.
+Three regions share a tested route spine with different night palettes, scenery, and additional upper platforms. They establish mechanics and progression; they are not yet three fully bespoke levels. All terrain is rectangular and solid except dormant moonbridges. Slopes, one-way platforms, ledge grabs, and arbitrary Unity physics interactions remain outside this version.
 
 | Mechanic | Default | Purpose |
 | --- | --- | --- |
@@ -37,14 +35,14 @@ These are starting values, not playtest-proven tuning. See [Night Hunt](NIGHT_HU
 6. Reed spitters teach cover and volley timing; the final bristleback teaches jumping above armor or rolling behind a committed charge.
 7. An arch introduces intentional world travel. The map allows return visits with collectible progress intact.
 
-Movement tutorial text remains proximity-based. The trial objective card and journal now confirm actual mechanism activation, rather than simply displaying the same lesson forever. The field guide carries a lot of new actions; an input-aware teaching sequence should replace that burden after first-time playtests.
+Tutorial text is proximity-based and does not yet confirm that the player performed a lesson. The field guide carries a lot of new actions; an input-aware teaching sequence should replace that burden after first-time playtests.
 
 ## Design boundaries and next milestones
 
 1. **Unity qualification:** clean import, run EditMode and PlayMode, inspect the actual scene, try every move and counter, collect each memory, and build WebGL. Resolve real console and visual issues before extending scope.
 2. **Combat and movement feel:** record claw timing, small jumps, full coils, air-dash chains, low-ceiling rolls, and enemy warnings. Check whether the falling rebound feels earned and whether roll recovery is readable. Tune from observation.
 3. **One showcase night region:** replace the canopy's repeated route spine with a handcrafted loop: safe lower trail, fast hunting route, and a moonbloom detour that reconnects to a checkpoint. Make revealed paths visible from their activation point and give their destinations a reason to visit.
-4. **Light identity:** assess how well scent rings, moonwake, moth reactions, wind-perch gauges, bell cues, and glowing warnings explain themselves. Only then consider light-carrying prey, optional darkness routes, or a light-reactive guardian. These are future ideas, not shipped mechanics.
+4. **Light identity:** assess how well scent rings, moonwake, moth reactions, and glowing warnings explain themselves. Only then consider light-carrying prey, optional darkness routes, or a light-reactive guardian. These are future ideas, not shipped mechanics.
 5. **Distinct worlds:** give each region its own geometry and a new use of the same moves. Test bridge and hidden-memory reachability deliberately; the current exit tests do not prove every scenic route.
 6. **Arcade release:** browser and controller qualification, measured download/frame-time/memory budgets, an actual-game trailer, and integration into sidhulyalkar.com.
 
@@ -52,4 +50,4 @@ The custom rectangular solver owns movement and must not be mixed with Rigidbody
 
 ## First-playtest targets
 
-These are prospective goals, not measured outcomes: a new player moves within 15 seconds, deliberately pounces within 60 seconds, understands a warning before taking repeated hits, and finds at least one optional route in five minutes. Ask them to demonstrate one claw chain, a safe roll, a moonbloom response, and one complete waystone trial. Check whether they can explain why a balance attempt failed and what restoring the waystone changed. Record hesitation and missed cues instead of coaching them through unclear instructions.
+These are prospective goals, not measured outcomes: a new player moves within 15 seconds, deliberately pounces within 60 seconds, understands a warning before taking repeated hits, and finds at least one optional route in five minutes. Ask them to demonstrate one claw chain, a safe roll, and a moonbloom response. Record hesitation and missed cues instead of coaching them through unclear instructions.

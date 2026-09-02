@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Wildbound.Core
 {
-    public enum Surface { Stone, Moss, Spring, Moving, Moonbridge, Balance, RootGate }
+    public enum Surface { Stone, Moss, Spring, Moving, Moonbridge }
     public enum PickupKind { Mote, Memory }
 
     public sealed class Platform
@@ -36,8 +36,6 @@ namespace Wildbound.Core
     {
         public string Name, Subtitle, Memory;
         public int Biome;
-        public float CameraMaxX = 73;
-        public Moontrial Trial;
         public V2 Spawn = new V2(2, 1), Exit = new V2(75, 1);
         public readonly List<Platform> Platforms = new List<Platform>();
         public readonly List<Pickup> Pickups = new List<Pickup>();

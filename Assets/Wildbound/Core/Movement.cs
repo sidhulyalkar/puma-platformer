@@ -27,9 +27,7 @@ namespace Wildbound.Core
         None = 0, Jump = 1, Land = 2, Pounce = 4, WallKick = 8, Spring = 16,
         Collect = 32, Checkpoint = 64, Respawn = 128, Portal = 256, Secret = 512, Stomp = 1024,
         Claw = 2048, DashClaw = 4096, Roll = 8192, Hit = 16384, Hurt = 32768,
-        Defeat = 65536, Hunt = 131072, Block = 262144, Bloom = 524288, Ambush = 1048576,
-        Balance = 2097152, Moonbell = 4194304, Breach = 8388608, TrialTravel = 16777216,
-        Waystone = 33554432, ObjectiveBlocked = 67108864
+        Defeat = 65536, Hunt = 131072, Block = 262144, Bloom = 524288, Ambush = 1048576
     }
 
     public sealed class PumaMotor

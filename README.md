@@ -4,7 +4,7 @@
 
 A Unity 2D exploration platformer about a female puma hunting beneath the moon. Stalk a moss hare, turn a pounce into a claw strike, read a bristleback's charge, and wake a hidden bridge with a moonbloom. Follow the trail from a nocturnal forest through a lantern grotto to a floating sky garden. The main trail stays open; the scenic route asks more of your paws.
 
-This repository contains **v0.3: The Moontrail**, written for **Unity 6000.3.22f1**. The gameplay simulation has executable regression coverage. **Unity import, rendering, editor playtesting, and WebGL execution still need verification.** No browser release is published yet.
+This repository contains **v0.2: Night Hunt**, written for **Unity 6000.3.22f1**. The gameplay simulation has executable regression coverage. **Unity import, rendering, editor playtesting, and WebGL execution still need verification.** No browser release is published yet.
 
 ## Play in Unity
 
@@ -35,20 +35,6 @@ The opening scene builds its own world, camera, puma, interface, and audio. No a
 - Local saves, a trail map with return travel to discovered worlds, a clean title screen, contextual lessons, gamepad input, mute, and reduced-motion options.
 - Original procedural cut-paper scenery, an articulated quadruped puma, pooled particles, and synthesized sound cues.
 
-## Restore the Moontrail
-
-Each region now has an optional **Waystone Trial** at the crescent near its start. Press **E / gamepad Y** to enter. The objective card tracks mechanisms; **Tab → Show objectives** opens the journal; **C → Trial strategy** explains the combinations.
-
-| Trial | What you combine |
-| --- | --- |
-| Weight of Moonlight | Claw a bloom, cross its bridge, then countersteer on a moving wind perch before pouncing onward. |
-| Echo Under Stone | Wake the crossing, climb above a moonbell, rake down to rebound, then choose a roll passage or a higher approach to the spitter. |
-| Crown of the Night | Balance, rebound from the elevated bell, dash-claw the root gate, and pass the bristleback to reach the sanctuary. |
-
-**Reward:** restore a waystone to keep that region's main-world light bridges awake across visits and saves. Completed mechanisms survive a fall. Leaving an unfinished trial resets the attempt; the outside world's discoveries and checkpoint remain intact. The three main exits remain open without trial completion.
-
-See the [strategy guide and authored room maps](docs/MOONTRAIL.md).
-
 ## Controls
 
 | Action | Keyboard | Gamepad |
@@ -62,9 +48,9 @@ See the [strategy guide and authored room maps](docs/MOONTRAIL.md).
 | Dash-claw / Moonfang Rush | K | Right trigger |
 | Ground roll | L | East / B |
 | Stalk / reveal scents | Hold Q | Hold left trigger |
-| Use arch / enter trial / restore waystone | E | North / Y |
+| Enter arch | E | North / Y |
 | Pause | Escape | Start |
-| Field guide / map and journal | C / Tab | Keyboard or mouse menu |
+| Field guide / map | C / Tab | Keyboard or mouse menu |
 | Return to checkpoint / mute | R / M | Keyboard or mouse menu |
 
 Controller labels use the Xbox layout. Touch controls are not implemented. Progress is stored on the current device/browser profile, not synced online.
@@ -78,7 +64,7 @@ dotnet run --project tests/Wildbound.Tests.csproj --configuration Release
 python3 tools/validate_project.py
 ```
 
-**98 regression cases** cover movement, combat timing, enemy patterns, armor, projectile collision ordering, low-ceiling rolls, hunting rewards, moonblooms, saves, and actual input-driven routes to all three exits. They include three complete trial routes, the grotto roll alternative, and 99,000 seeded movement/combat/trial stress steps. The GitHub Actions workflow runs both commands. These are simulation and structural checks, not a substitute for Unity runtime qualification.
+**73 regression cases** cover movement, combat timing, enemy patterns, armor, projectile collision ordering, low-ceiling rolls, hunting rewards, moonblooms, saves, and actual input-driven routes to all three exits. They include 81,000 seeded movement/combat stress steps. The GitHub Actions workflow runs both commands. These are simulation and structural checks, not a substitute for Unity runtime qualification.
 
 Run the same cases in **Window → General → Test Runner → EditMode**. On macOS, the command-line equivalents are:
 
@@ -106,7 +92,6 @@ Open `http://localhost:8000`. The eventual `sidhulyalkar.com` arcade can embed t
 ## Development notes
 
 - [Design direction and next milestones](docs/DESIGN.md)
-- [Moontrail objectives, strategies, and room maps](docs/MOONTRAIL.md)
 - [Night Hunt moves, enemies, and light rules](docs/NIGHT_HUNT.md)
 - [Architecture and editing the game](docs/ARCHITECTURE.md)
 - [References and asset provenance](docs/REFERENCES.md)

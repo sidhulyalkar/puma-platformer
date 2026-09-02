@@ -214,12 +214,11 @@ namespace Wildbound.Unity
 
         private void CombatFeedback(GameEvent e)
         {
-            if ((e & (GameEvent.Hit | GameEvent.Block | GameEvent.Bloom | GameEvent.Moonbell | GameEvent.Breach)) != 0)
+            if ((e & (GameEvent.Hit | GameEvent.Block | GameEvent.Bloom)) != 0)
                 Emit((e & GameEvent.Bloom) != 0 ? 22 : 12, game.Session.Combat.LastImpact, (e & GameEvent.Block) != 0 ? Hex("ffc78e") : light);
             if ((e & (GameEvent.Hit | GameEvent.DashClaw)) != 0) shake = .07f;
             if ((e & GameEvent.Hurt) != 0) { shake = .14f; Emit(14, game.Session.Player.Position, Hex("e6a2a2")); }
             if ((e & GameEvent.Defeat) != 0) Emit(20, game.Session.Combat.LastImpact, moss);
-            if ((e & (GameEvent.Balance | GameEvent.Waystone)) != 0) Emit(18, game.Session.Player.Position, light);
         }
     }
 }

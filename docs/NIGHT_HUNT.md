@@ -1,6 +1,6 @@
 # Night Hunt: movement, combat, and moonlight
 
-The Night Hunt moveset gives the puma a hunting rhythm: approach quietly, read a tell, commit to a strike, and spend the opening on movement. Broad claw sweeps and deliberate recovery reflect the requested Reaper-style inspiration; the feline attacks, prey rewards, and light interactions are original.
+v0.2 gives the puma a hunting rhythm: approach quietly, read a tell, commit to a strike, and spend the opening on movement. Broad claw sweeps and deliberate recovery reflect the requested Reaper-style inspiration; the feline attacks, prey rewards, and light interactions are original.
 
 ## Moves
 
@@ -15,7 +15,7 @@ The Night Hunt moveset gives the puma a hunting rhythm: approach quietly, read a
 | Roll | L on the ground | 0.34-second low roll, 0.65-second cooldown. Dodges after the first 0.04 seconds until the final 0.09 seconds. Remains crouched if a low ceiling blocks standing. |
 | Stalk | Hold Q on the ground | Moves at 35% run speed, reveals nearby scent rings, and reduces hare detection distance. Starting a strike while stalking adds one damage against an idle target. |
 
-The attack buffer lasts 0.2 seconds. A combo expires 0.6 seconds after its move ends. Windup and active frames commit the claw; roll/dash and a ready pounce can cancel its recovery. All timing is simulation time, so pause freezes it.
+The attack buffer lasts 0.2 seconds. A combo expires 0.6 seconds after its move ends. Windup and active frames commit the claw; roll/dash can cancel its recovery. All timing is simulation time, so pause freezes it.
 
 | Claw | Windup | Active | Recovery |
 | --- | --- | --- | --- |
@@ -26,8 +26,6 @@ The attack buffer lasts 0.2 seconds. A combo expires 0.6 seconds after its move 
 | Falling rake | 0.09 s | 0.22 s | 0.21 s |
 | Pounce rake | 0.025 s | 0.22 s | 0.20 s |
 | Dash-claw | Immediate | 0.20 s | 0.22 s |
-
-Down + claw can interrupt an active pounce into a falling rake. Trial moonbells also provide a confirmed-hit rebound; see [Moontrail strategy](MOONTRAIL.md).
 
 Controller equivalents are in the README and in-game field guide. Charge pounces, variable jumps, wall kicks, coyote time, buffered jumps, moving platforms, and spring flowers remain available alongside these moves.
 
@@ -49,7 +47,7 @@ Any wildlife defeat refreshes pounce/aerial dash and adds one instinct, capped a
 ## Moonwake and night readability
 
 - Claw a blue moonbloom with an actual unobstructed strike. It flares for six seconds and activates its linked moonbridge.
-- The bridge stays solid after the flare and through checkpoint recovery. Re-entering the region resets its blooms and bridges unless its waystone has been restored. [Waystone trials](MOONTRAIL.md) make that light permanent.
+- The bridge stays solid after the flare and through checkpoint recovery. Re-entering the region resets its blooms and bridges.
 - The flare stuns visible moths within five units for 1.2 seconds. The grotto and sky garden place one directly above the second bloom so this interaction can be used in the level.
 - Repeated bloom activation is limited to once per attack sequence and at least one second between pulses.
 - Pale platform lips distinguish landable terrain. Warm puma accents, amber enemy warnings, cyan scent rings, glowing seeds, and claw arcs guide attention.
@@ -59,10 +57,10 @@ These are lightweight sprite effects, not a dynamic lighting/shadow system. Ther
 
 ## Recovery and saves
 
-The puma has five hearts. Activating a different checkpoint heals fully; reaching zero hearts or falling returns her to the remembered checkpoint with full health and one second of grace. Attacks, projectiles, and instinct clear. Surviving enemies return home; already-defeated wildlife and activated bridges stay changed during the visit. Region travel recreates wildlife and moonblooms; a restored waystone immediately awakens its region’s moonbridges.
+The puma has five hearts. Activating a different checkpoint heals fully; reaching zero hearts or falling returns her to the remembered checkpoint with full health and one second of grace. Attacks, projectiles, and instinct clear. Surviving enemies return home; already-defeated wildlife and activated bridges stay changed during the visit. Region travel recreates wildlife and moonblooms.
 
-Collectibles, discovered regions, checkpoints, and journey completion use the existing local save. Combat state and individual moonwake activations are temporary; restored waystones are saved. Hunt/defeat counts belong to the current session only. No mandatory enemy-clear gate blocks travel to the next world.
+Collectibles, discovered regions, checkpoints, and journey completion use the existing local save. Combat state and moonwake activation are intentionally temporary. Hunt/defeat counts belong to the current session only. No mandatory enemy-clear gate blocks travel to the next world.
 
 ## Verification boundary
 
-The shared core has 98 executable regression cases, including the authored moonbloom/moth interaction and 45,000 combat stress steps. See [VALIDATION.md](VALIDATION.md). Unity rendering, Runtime/Editor API compilation, hardware input, audio, and WebGL execution remain unverified in the development container. Tune these starting values after watching actual play.
+The shared core has 73 executable regression cases, including the authored moonbloom/moth interaction and 45,000 combat stress steps. See [VALIDATION.md](VALIDATION.md). Unity rendering, Runtime/Editor API compilation, hardware input, audio, and WebGL execution remain unverified in the development container. Tune these starting values after watching actual play.
