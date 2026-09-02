@@ -6,7 +6,7 @@ PlayerSettings:
   serializedVersion: 28
   companyName: Sid Hulyalkar
   productName: 'Puma: Wildbound'
-  bundleVersion: 0.1.0
+  bundleVersion: 0.2.0
   defaultScreenWidth: 1280
   defaultScreenHeight: 720
   defaultWebScreenWidth: 1280

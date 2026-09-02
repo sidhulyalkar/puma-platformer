@@ -6,6 +6,7 @@ namespace Wildbound.Tests
 {
     public static class SimulationCases
     {
+        static SimulationCases() { foreach (var pair in CombatCases.All) All.Add(pair.Key, pair.Value); }
         public static readonly Dictionary<string, Action> All = new Dictionary<string, Action>
         {
             { "Spawn settles without falling", Spawn },
@@ -25,8 +26,8 @@ namespace Wildbound.Tests
             { "Moving platform carries a resting player", PlatformCarry },
             { "Hazard returns to checkpoint and keeps discoveries", CheckpointRecovery },
             { "Collectible cannot be counted twice", CollectOnce },
-            { "Side contact with thornling respawns", CritterContact },
-            { "Pounce puts a thornling to sleep", CritterPounce },
+            { "Side contact costs one heart and grants recovery time", CritterContact },
+            { "Pounce staggers a thornling", CritterPounce },
             { "Pause freezes simulation and cancels charge", Pause },
             { "Save resumes in the same world with pickups", SaveRoundTrip },
             { "Malformed and future saves fall back safely", InvalidSave },
@@ -43,8 +44,8 @@ namespace Wildbound.Tests
         private static bool Near(float a, float b, float epsilon = .02f) { return Math.Abs(a - b) < epsilon; }
         private static GameSession Flat()
         {
-            var g = new GameSession(); g.World.Platforms.Clear(); g.World.Hazards.Clear(); g.World.Critters.Clear(); g.World.Pickups.Clear();
-            g.World.Checkpoints.Clear(); g.World.Add(-100, -2, 300, 2); g.Player.Reset(new V2(0, 0)); Tick(g, 2); return g;
+            var g = new GameSession(); g.World.Platforms.Clear(); g.World.Hazards.Clear(); g.World.Enemies.Clear(); g.World.Blooms.Clear(); g.World.Pickups.Clear();
+            g.World.Checkpoints.Clear(); g.World.Add(-100, -2, 300, 2); g.Player.Reset(new V2(0, 0)); Tick(g, 125); return g;
         }
         private static void Tick(GameSession g, int count, PlayerInput input = default(PlayerInput))
         { for (int i = 0; i < count; i++) { g.Step(input); input.JumpPressed = input.PouncePressed = input.PounceReleased = input.InteractPressed = false; } }
@@ -145,12 +146,12 @@ namespace Wildbound.Tests
         }
         private static void CritterContact()
         {
-            var g = Flat(); g.World.Critters.Add(new Critter(0, 0, 0)); g.Step(new PlayerInput()); Check(g.Deaths == 1, "Side contact did not recover");
+            var g = Flat(); g.World.Enemies.Add(new Enemy(EnemyKind.Thornling, 0, 0, 0)); g.Step(new PlayerInput()); Check(g.Combat.Health == 4 && g.Deaths == 0, "Contact did not cost exactly one heart");
         }
         private static void CritterPounce()
         {
-            var g = Flat(); g.World.Critters.Add(new Critter(1.7f, 0, 0)); Charge(g, 1); Tick(g, 12, new PlayerInput { Move = 1 });
-            Check(g.Deaths == 0 && g.World.Critters[0].Asleep, "Pounce did not pacify thornling");
+            var g = Flat(); g.World.Enemies.Add(new Enemy(EnemyKind.Thornling, 1.7f, 0, 0)); Charge(g, 1); Tick(g, 12, new PlayerInput { Move = 1 });
+            Check(g.Deaths == 0 && g.World.Enemies[0].Health < g.World.Enemies[0].MaxHealth, "Pounce did not hit thornling");
         }
         private static void Pause()
         {
@@ -189,7 +190,7 @@ namespace Wildbound.Tests
             {
                 var save = new JourneySave { Biome = b }; save.Checkpoints[b] = c; var g = new GameSession(save); Tick(g, 180);
                 Check(g.Deaths == 0 && g.Player.Grounded, "Unsafe spawn " + b + "/" + c);
-                foreach (var platform in g.World.Platforms) Check(!g.Player.Bounds.Overlaps(platform.Bounds), "Spawn in solid");
+                foreach (var platform in g.World.Platforms) Check(!platform.Enabled || !g.Player.Bounds.Overlaps(platform.Bounds), "Spawn in solid");
             }
         }
         private static void InvalidInput()

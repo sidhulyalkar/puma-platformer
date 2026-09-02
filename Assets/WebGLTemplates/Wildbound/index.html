@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Puma: Wildbound</title>
   <style>
-    *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#10282f;color:#fff0d1;font:16px system-ui,sans-serif}
+    *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#0b1527;color:#fff0d1;font:16px system-ui,sans-serif}
     body{display:grid;place-items:center}main{width:min(100vw,calc(100dvh * 16/9));position:relative;aspect-ratio:16/9}
-    canvas{width:100%;height:100%;display:block;background:#163d48;outline:none}
-    #loading{position:absolute;inset:0;display:grid;place-content:center;gap:20px;text-align:center;background:#10282f;padding:30px}
+    canvas{width:100%;height:100%;display:block;background:#0b1527;outline:none}
+    #loading{position:absolute;inset:0;display:grid;place-content:center;gap:20px;text-align:center;background:#0b1527;padding:30px}
     h1{font-size:clamp(26px,5vw,60px);letter-spacing:.08em;margin:0}p{max-width:560px;line-height:1.6;margin:auto}
     progress{width:100%;accent-color:#edb878}button{font:inherit;background:#254950;color:#fff0d1;border:1px solid #8aa88a;border-radius:5px;padding:8px 14px;cursor:pointer}
     #fullscreen{position:absolute;right:16px;bottom:12px;opacity:.6}#fullscreen:hover,#fullscreen:focus{opacity:1}
@@ -20,8 +20,8 @@
   <main id="player">
     <canvas id="unity-canvas" width="1280" height="720" tabindex="0" aria-label="Puma Wildbound platform adventure. Keyboard or gamepad required."></canvas>
     <section id="loading" aria-live="polite">
-      <h1>WILDBOUND</h1><p>Small paws. Some very big possibilities.</p>
-      <p id="hint">Keyboard or gamepad required. A / D to move, SPACE to jump, SHIFT to charge a pounce.</p>
+      <h1>WILDBOUND</h1><p>Quiet paws. A wild heart after dark.</p>
+      <p id="hint">Keyboard or gamepad required. A / D move · SPACE jump · SHIFT pounce · J claw · K dash-claw · L roll · Q stalk. Press C in-game for the field guide.</p>
       <button id="start" type="button">Enter the wild</button>
       <progress id="progress" max="1" value="0" aria-label="Loading game" hidden></progress>
       <p id="status"></p>
@@ -39,7 +39,7 @@
       script.onerror=()=>{script.remove();failure('Check your connection and retry.');};
       script.onload=()=>createUnityInstance(canvas,{
         dataUrl:'Build/{{{ DATA_FILENAME }}}',frameworkUrl:'Build/{{{ FRAMEWORK_FILENAME }}}',codeUrl:'Build/{{{ CODE_FILENAME }}}',
-        streamingAssetsUrl:'StreamingAssets',companyName:'Sid Hulyalkar',productName:'Puma: Wildbound',productVersion:'0.1.0',
+        streamingAssetsUrl:'StreamingAssets',companyName:'Sid Hulyalkar',productName:'Puma: Wildbound',productVersion:'0.2.0',
         devicePixelRatio:Math.min(window.devicePixelRatio||1,2)
       },value=>{progress.value=value;}).then(game=>{instance=game;loading.hidden=true;fullscreen.hidden=false;canvas.focus();}).catch(()=>failure('WebGL 2 and a supported desktop browser are required.'));
       document.body.appendChild(script);

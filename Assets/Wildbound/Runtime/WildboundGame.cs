@@ -41,7 +41,6 @@ namespace Wildbound.Unity
         private void Update()
         {
             var k = Keyboard.current; var pad = Gamepad.current;
-            if (k == null && pad == null) return;
             bool pause = (k != null && k.escapeKey.wasPressedThisFrame) || (pad != null && pad.startButton.wasPressedThisFrame);
             if (pause && Playing) { ShowControls = ShowMap = false; TogglePause(); }
             if (!Playing && ((k != null && k.enterKey.wasPressedThisFrame) || (pad != null && pad.startButton.wasPressedThisFrame))) Begin();
@@ -63,6 +62,10 @@ namespace Wildbound.Unity
             pending.PounceHeld = (k != null && k.leftShiftKey.isPressed) || (pad != null && pad.buttonWest.isPressed);
             pending.PounceReleased |= (k != null && k.leftShiftKey.wasReleasedThisFrame) || (pad != null && pad.buttonWest.wasReleasedThisFrame);
             pending.InteractPressed |= (k != null && k.eKey.wasPressedThisFrame) || (pad != null && pad.buttonNorth.wasPressedThisFrame);
+            pending.AttackPressed |= (k != null && k.jKey.wasPressedThisFrame) || (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame) || (pad != null && pad.rightShoulder.wasPressedThisFrame);
+            pending.DashPressed |= (k != null && k.kKey.wasPressedThisFrame) || (pad != null && pad.rightTrigger.wasPressedThisFrame);
+            pending.RollPressed |= (k != null && k.lKey.wasPressedThisFrame) || (pad != null && pad.buttonEast.wasPressedThisFrame);
+            pending.StalkHeld = (k != null && k.qKey.isPressed) || (pad != null && pad.leftTrigger.isPressed);
         }
         private void FixedUpdate()
         {
@@ -71,11 +74,15 @@ namespace Wildbound.Unity
             bool completedBefore = Session.Save.Completed;
             Session.Step(pending);
             pending.JumpPressed = pending.PouncePressed = pending.PounceReleased = pending.InteractPressed = false;
+            pending.AttackPressed = pending.DashPressed = pending.RollPressed = false;
             GameEvent e = Session.Events;
             if (Session.Save.Biome != biome) { view.Rebuild(); Announce(Session.World.Subtitle); }
             if ((e & GameEvent.Respawn) != 0) { view.SnapCamera(); Announce("A soft landing. Your discoveries are still yours."); }
             if ((e & GameEvent.Checkpoint) != 0) Announce("Trail remembered.");
             if ((e & GameEvent.Secret) != 0) Announce(Session.World.Memory, 7);
+            if ((e & GameEvent.Bloom) != 0) Announce("Moonwake. A bridge of light answers her claws.");
+            if ((e & GameEvent.Hunt) != 0) Announce("Prey caught. A heart restored; ready to leap again.");
+            if ((e & GameEvent.Block) != 0) Announce("Armored front. Get above or behind him.", 2);
             if ((e & (GameEvent.Collect | GameEvent.Secret | GameEvent.Checkpoint | GameEvent.Portal)) != 0) MarkSave();
             if (!completedBefore && Session.Save.Completed) { ShowEnding = true; Session.SetPaused(true); }
             sound.React(e); view.React(e);

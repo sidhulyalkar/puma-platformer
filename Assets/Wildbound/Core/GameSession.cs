@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Wildbound.Core
 {
@@ -25,6 +26,8 @@ namespace Wildbound.Core
         public const float StepSeconds = 1f / 120;
         public WorldDefinition World { get; private set; }
         public PumaMotor Player { get; private set; }
+        public PumaCombat Combat { get; private set; } = new PumaCombat();
+        public readonly List<Projectile> Projectiles = new List<Projectile>();
         public JourneySave Save { get; private set; }
         public GameEvent Events { get; private set; }
         public float Time { get; private set; }
@@ -40,6 +43,7 @@ namespace Wildbound.Core
             World = WorldDefinition.Create(biome); Save.Biome = biome; Save.FurthestBiome = Math.Max(Save.FurthestBiome, biome); Time = Recovery = 0;
             for (int i = 0; i < World.Pickups.Count; i++) World.Pickups[i].Collected = (Save.Collected[biome] & (1 << i)) != 0;
             Player = new PumaMotor(CheckpointPosition());
+            Combat.ResetForRespawn(); Projectiles.Clear();
         }
         public bool TravelTo(int biome)
         {
@@ -53,9 +57,11 @@ namespace Wildbound.Core
         }
         public void Respawn()
         {
-            Player.Reset(CheckpointPosition()); Recovery = .3f; Deaths++; Events |= GameEvent.Respawn;
+            Player.Reset(CheckpointPosition()); Combat.ResetForRespawn(); Projectiles.Clear();
+            foreach (var enemy in World.Enemies) enemy.ReturnHome();
+            Recovery = .3f; Deaths++; Events |= GameEvent.Respawn;
         }
-        public void SetPaused(bool paused) { Paused = paused; Player.CancelInput(); }
+        public void SetPaused(bool paused) { Paused = paused; Player.CancelInput(); Combat.CancelQueue(); }
         public int Motes
         {
             get { int n = 0; for (int i = 0; i < World.Pickups.Count; i++) if (World.Pickups[i].Collected && World.Pickups[i].Kind == PickupKind.Mote) n++; return n; }
@@ -83,30 +89,59 @@ namespace Wildbound.Core
             if (Recovery > 0) { Recovery = Math.Max(0, Recovery - dt); return; }
             Time += dt;
             foreach (var platform in World.Platforms) platform.Update(Time);
-            foreach (var critter in World.Critters) critter.Update(Time);
+            foreach (var bloom in World.Blooms) bloom.GlowTime = Math.Max(0, bloom.GlowTime - dt);
+            if (Player.LowProfile && Player.RollTime <= 0 && !WorldCollision.OverlapsSolid(World,
+                new Box(Player.Position.X - PumaMotor.Width / 2, Player.Position.Y, PumaMotor.Width, PumaMotor.Height)))
+                Player.LowProfile = false;
             if (Player.Grounded && Player.GroundIndex >= 0 && Player.GroundIndex < World.Platforms.Count)
                 MoveAxis(World.Platforms[Player.GroundIndex].Delta.X, true);
+            Events |= Combat.Prepare(ref input, Player, dt);
             Events |= Player.Prepare(input, dt);
+            Combat.ApplyMotion(Player); Combat.OnMovement(Events);
+            foreach (var enemy in World.Enemies) enemy.Step(World, Player, Projectiles, dt);
             bool wasGrounded = Player.Grounded;
-            float oldFeet = Player.Position.Y;
             V2 delta = Player.Velocity * dt;
             // Substeps bound travel below the thinnest authored collider, including fast pounces.
             int steps = Math.Max(1, (int)Math.Ceiling(Math.Max(Math.Abs(delta.X), Math.Abs(delta.Y)) / .12f));
             Player.Grounded = false; Player.GroundIndex = -1;
-            for (int i = 0; i < steps; i++) { MoveAxis(delta.X / steps, true); MoveAxis(delta.Y / steps, false); }
+            for (int i = 0; i < steps; i++)
+            {
+                float oldFeet = Player.Position.Y;
+                MoveAxis(delta.X / steps, true); MoveAxis(delta.Y / steps, false);
+                Events |= Combat.ResolveStrike(World, Player);
+                Events |= Combat.ResolveBodyHit(World, Player, oldFeet, delta.Y / steps);
+                foreach (var hazard in World.Hazards) if (Player.Bounds.Overlaps(hazard)) { Respawn(); return; }
+                foreach (var enemy in World.Enemies)
+                    if (enemy.ContactDanger && Player.Bounds.Overlaps(enemy.Bounds)) Events |= Combat.TakeDamage(Player, enemy.Position);
+                if (Combat.Health <= 0) { Respawn(); return; }
+                if ((Events & GameEvent.Hurt) != 0 || (delta.Y < 0 && Player.Velocity.Y > 0)) break;
+            }
             ProbeContacts();
             if (!wasGrounded && Player.Grounded) Events |= GameEvent.Land;
             if (Player.Grounded && Player.GroundIndex >= 0 && World.Platforms[Player.GroundIndex].Surface == Surface.Spring)
-            { Player.Spring(); Events |= GameEvent.Spring; }
+            { Player.Spring(); Events |= GameEvent.Spring; Combat.OnMovement(GameEvent.Spring); }
             if (Player.Position.Y < -8) { Respawn(); return; }
-            foreach (var hazard in World.Hazards) if (Player.Bounds.Overlaps(hazard)) { Respawn(); return; }
-            foreach (var critter in World.Critters)
+            for (int i = Projectiles.Count - 1; i >= 0; i--)
             {
-                if (critter.Asleep || !Player.Bounds.Overlaps(critter.Bounds)) continue;
-                if (Player.PounceTime > 0 || (delta.Y < 0 && oldFeet >= critter.Bounds.Top - .12f))
-                { critter.Asleep = true; Player.Spring(); Player.Velocity.Y = 11; Events |= GameEvent.Stomp; }
-                else { Respawn(); return; }
+                var shot = Projectiles[i]; V2 next = shot.Position + shot.Velocity * dt; shot.Life -= dt;
+                // Resolve the nearest intersection; a wall behind the player is not a shield.
+                float wallFraction = float.PositiveInfinity;
+                foreach (var platform in World.Platforms)
+                {
+                    var b = platform.Bounds; float fraction;
+                    if (platform.Enabled && WorldCollision.SegmentHitFraction(shot.Position, next,
+                        new Box(b.X - Projectile.Radius, b.Y - Projectile.Radius, b.W + 2 * Projectile.Radius, b.H + 2 * Projectile.Radius), out fraction))
+                        wallFraction = Math.Min(wallFraction, fraction);
+                }
+                Box player = Player.Bounds; float playerFraction;
+                bool hit = WorldCollision.SegmentHitFraction(shot.Position, next,
+                    new Box(player.X - Projectile.Radius, player.Y - Projectile.Radius, player.W + 2 * Projectile.Radius, player.H + 2 * Projectile.Radius), out playerFraction)
+                    && playerFraction < wallFraction;
+                if (hit) Events |= Combat.TakeDamage(Player, shot.Position);
+                shot.Position = next;
+                if (!float.IsPositiveInfinity(wallFraction) || hit || shot.Life <= 0) Projectiles.RemoveAt(i);
             }
+            if (Combat.Health <= 0) { Respawn(); return; }
             for (int i = 0; i < World.Pickups.Count; i++)
             {
                 var p = World.Pickups[i];
@@ -116,7 +151,7 @@ namespace Wildbound.Core
             }
             for (int i = 0; i < World.Checkpoints.Count; i++)
                 if (Save.Checkpoints[Save.Biome] != i && (Player.Position - World.Checkpoints[i]).Length < 1)
-                { Save.Checkpoints[Save.Biome] = i; Events |= GameEvent.Checkpoint; }
+                { Save.Checkpoints[Save.Biome] = i; Combat.Heal(); Events |= GameEvent.Checkpoint; }
             if (input.InteractPressed && (Player.Position - World.Exit).Length < 2.2f)
             {
                 if (Save.Biome < 2) { LoadWorld(Save.Biome + 1); Events |= GameEvent.Portal; }
@@ -130,7 +165,7 @@ namespace Wildbound.Core
             if (horizontal) Player.Position.X += amount; else Player.Position.Y += amount;
             foreach (var p in World.Platforms)
             {
-                if (!Player.Bounds.Overlaps(p.Bounds)) continue;
+                if (!p.Enabled || !Player.Bounds.Overlaps(p.Bounds)) continue;
                 if (horizontal)
                 {
                     Player.Position.X = amount > 0 ? p.Bounds.X - PumaMotor.Width / 2 : p.Bounds.Right + PumaMotor.Width / 2;
@@ -138,7 +173,7 @@ namespace Wildbound.Core
                 }
                 else
                 {
-                    Player.Position.Y = amount > 0 ? p.Bounds.Y - PumaMotor.Height : p.Bounds.Top;
+                    Player.Position.Y = amount > 0 ? p.Bounds.Y - Player.BodyHeight : p.Bounds.Top;
                     Player.Velocity.Y = 0;
                 }
             }
@@ -149,6 +184,7 @@ namespace Wildbound.Core
             Player.Wall = 0;
             for (int i = 0; i < World.Platforms.Count; i++)
             {
+                if (!World.Platforms[i].Enabled) continue;
                 Box p = World.Platforms[i].Bounds;
                 if (Player.Velocity.Y <= 0 && new Box(b.X + .04f, b.Y - .025f, b.W - .08f, .025f).Overlaps(p))
                 { Player.Grounded = true; Player.GroundIndex = i; }
