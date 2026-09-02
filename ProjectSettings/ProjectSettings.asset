@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!129 &1
+PlayerSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 28
+  companyName: Sid Hulyalkar
+  productName: 'Puma: Wildbound'
+  bundleVersion: 0.1.0
+  defaultScreenWidth: 1280
+  defaultScreenHeight: 720
+  defaultWebScreenWidth: 1280
+  defaultWebScreenHeight: 720
+  runInBackground: 0
+  resizableWindow: 1
+  activeInputHandler: 1
+  colorSpace: 0
+  webGLTemplate: PROJECT:Wildbound
+  webGLCompressionFormat: 1
+  webGLDecompressionFallback: 1

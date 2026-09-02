@@ -1,0 +1,5 @@
+{
+  "name": "Wildbound.Runtime",
+  "rootNamespace": "Wildbound.Unity",
+  "references": ["Wildbound.Core", "Unity.InputSystem"]
+}

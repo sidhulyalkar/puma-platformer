@@ -1,0 +1,19 @@
+name: Gameplay core
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Validate Unity project structure and metadata
+        run: python3 tools/validate_project.py
+      - name: Execute the actual gameplay simulation
+        run: dotnet run --project tests/Wildbound.Tests.csproj --configuration Release

@@ -1,0 +1,5 @@
+{
+  "name": "Wildbound.PlayModeTests",
+  "references": ["Wildbound.Core", "Wildbound.Runtime"],
+  "optionalUnityReferences": ["TestAssemblies"]
+}

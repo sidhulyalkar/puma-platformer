@@ -1,0 +1,5 @@
+{
+  "name": "Wildbound.Core",
+  "rootNamespace": "Wildbound.Core",
+  "noEngineReferences": true
+}

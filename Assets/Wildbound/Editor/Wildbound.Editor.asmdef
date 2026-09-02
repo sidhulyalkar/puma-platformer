@@ -1,0 +1,5 @@
+{
+  "name": "Wildbound.Editor",
+  "rootNamespace": "Wildbound.Editor",
+  "includePlatforms": ["Editor"]
+}
