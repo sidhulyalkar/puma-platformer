@@ -47,10 +47,10 @@ namespace Wildbound.Unity
         private void Title()
         {
             Panel(0, 0, 590, 720, new Color(ink.r, ink.g, ink.b, .88f));
-            Label(65, 108, 490, 25, "P U M A   /   A N   E X P L O R E R ' S   T A L E", eyebrow);
+            Label(65, 108, 490, 25, "P U M A   /   T H E   N I G H T   I S   H E R S", eyebrow);
             Label(60, 153, 560, 95, "WILDBOUND", title);
-            Label(65, 267, 430, 80, "Small paws.\nSome very big possibilities.", new GUIStyle(text) { fontSize = 29 });
-            Label(65, 370, 405, 80, "Coil into a pounce. Chase a distant light. Discover what waits beyond the canopy.", text);
+            Label(65, 267, 430, 80, "Quiet paws.\nA wild heart after dark.", new GUIStyle(text) { fontSize = 29 });
+            Label(65, 370, 405, 80, "Follow a scent. Read an opening. Turn a leap into a hunt, and wake paths made of moonlight.", text);
             if (Button(65, 488, 280, 54, game.Session.Save.Biome > 0 || game.Session.Save.Collected[0] != 0 ? "Continue your trail  /  ENTER" : "Begin exploring  /  ENTER")) game.Begin();
             if (Button(65, 557, 190, 43, "Field guide  /  C")) game.ShowControls = true;
             Label(65, 656, 465, 26, "A SID HULYALKAR GAME   /   DEVELOPMENT SLICE", eyebrow);
@@ -62,10 +62,14 @@ namespace Wildbound.Unity
             Label(42, 54, 365, 22, "Explore at your own pace.", new GUIStyle(eyebrow) { fontSize = 12 });
             Panel(863, 23, 393, 57, ink);
             Label(884, 41, 360, 29, "LIGHT  " + game.Session.Motes + " / 12     MEMORIES  " + game.Session.Memories + " / 3", text);
-            Label(28, 684, 770, 23, "SPACE jump    SHIFT pounce    E explore    TAB trail map    C guide    ESC pause", eyebrow);
+            Panel(455, 23, 390, 57, ink);
+            Label(472, 31, 368, 24, "VITALITY  " + game.Session.Combat.Health + " / 5     INSTINCT  " + game.Session.Combat.Instinct + " / 3", eyebrow);
+            Label(472, 55, 368, 22, game.Session.Combat.Busy ? game.Session.Combat.MoveName : "HUNTS  " + game.Session.Combat.Hunts + "   /   THE NIGHT IS HERS", new GUIStyle(eyebrow) { fontSize = 12 });
+            Label(28, 684, 1020, 23, "SPACE jump   SHIFT pounce   J claw   K dash-claw   L roll   Q stalk   E explore   TAB map   C guide", new GUIStyle(eyebrow) { fontSize = 12 });
             var p = game.Session.Player;
             if (!game.Session.Paused)
             {
+                CreatureHint();
                 Sign sign = game.Session.NearbySign();
                 if (sign != null)
                 {
@@ -77,24 +81,24 @@ namespace Wildbound.Unity
                     Panel(490, 500, 300, 50, ink); Label(505, 507, 270, 23, p.Charge >= 1 ? "FULL COIL  /  RELEASE SHIFT" : "COILING  /  RELEASE TO POUNCE", eyebrow);
                     Panel(505, 535, 270, 5, new Color(.22f, .36f, .37f)); Panel(505, 535, 270 * p.Charge, 5, paper);
                 }
-                else Label(1030, 684, 230, 23, p.PounceReady ? "POUNCE READY" : "LAND TO RECHARGE", eyebrow);
+                else Label(1050, 684, 205, 23, p.Stalking ? "SCENT SIGHT" : p.PounceReady ? "POUNCE READY" : "LAND TO RECHARGE", eyebrow);
             }
         }
         private void Controls()
         {
-            Panel(230, 75, 820, 570, ink);
+            Panel(230, 75, 820, 590, ink);
             Label(277, 106, 725, 40, "THE FIELD GUIDE", new GUIStyle(title) { fontSize = 35 });
-            string[] keys = { "A / D or arrows", "SPACE  /  gamepad A", "SHIFT  /  gamepad X", "W / S while pouncing", "SPACE against a wall", "E  /  gamepad Y", "R   /   TAB   /   ESC" };
-            string[] actions = { "Roam. The left stick works too.", "Jump. Hold to rise higher; release for a short hop.", "Hold to charge, release to leap. Land to recharge.", "Aim higher or dive. Up / down on the left stick.", "Kick away. Push into a wall to slow your fall.", "Step into an arch and explore the next world.", "Return to checkpoint / trail map / pause." };
+            string[] keys = { "A / D or arrows", "SPACE  /  gamepad A", "SHIFT  /  gamepad X", "J / click  /  RB", "K  /  gamepad RT", "L  /  gamepad B", "Hold Q  /  gamepad LT", "E  /  gamepad Y", "TAB   /   C   /   ESC", "R   /   M" };
+            string[] actions = { "Roam. W/S or the stick aims a pounce.", "Jump; hold for height. Jump against a wall to kick.", "Hold to coil, release to pounce. Land to recharge.", "Claw chain. W+J rises; airborne S+J rakes down.", "Dash-claw. Three defeats empower the next rush.", "Ground roll. Dodge in the middle; beware recovery.", "Stalk quietly and see scents. Hares notice you later.", "Step into an arch and explore the next world.", "Trail map / field guide / pause. Start also pauses.", "Return to checkpoint / toggle sound." };
             for (int i = 0; i < keys.Length; i++)
             {
-                Label(278, 169 + i * 47, 245, 40, keys[i], eyebrow);
-                Label(536, 165 + i * 47, 465, 43, actions[i], text);
+                Label(278, 163 + i * 37, 245, 37, keys[i], eyebrow);
+                Label(536, 159 + i * 37, 465, 39, actions[i], new GUIStyle(text) { fontSize = 17 });
             }
-            Label(277, 510, 728, 50, "Pink flowers launch you and restore your pounce. Light and memories are optional. Falling never takes them away.", eyebrow);
-            if (Button(277, 581, 205, 40, "Back  /  C")) { game.ShowControls = false; if (game.Playing) game.Resume(); }
-            if (Button(500, 581, 205, 40, game.Muted ? "Sound: off" : "Sound: on")) game.ToggleMute();
-            if (Button(723, 581, 280, 40, game.ReducedMotion ? "Motion: reduced" : "Motion: full")) game.ToggleMotion();
+            Label(277, 544, 728, 48, "Rake down onto a foe to rebound. Claw a blue moonbloom to wake a lasting bridge and dazzle moths. Catch prey to restore a heart.", eyebrow);
+            if (Button(277, 606, 205, 40, "Back  /  C")) { game.ShowControls = false; if (game.Playing) game.Resume(); }
+            if (Button(500, 606, 205, 40, game.Muted ? "Sound: off" : "Sound: on")) game.ToggleMute();
+            if (Button(723, 606, 280, 40, game.ReducedMotion ? "Motion: reduced" : "Motion: full")) game.ToggleMotion();
         }
         private void Pause()
         {
@@ -115,7 +119,7 @@ namespace Wildbound.Unity
             foreach (var p in game.Session.World.Platforms)
             {
                 var b = p.Bounds; if (b.H > 10) continue;
-                Panel(210 + b.X * 10, 477 - b.Top * 11, b.W * 10, Mathf.Min(20, b.H * 11), new Color(.4f, .58f, .53f));
+                Panel(210 + b.X * 10, 477 - b.Top * 11, b.W * 10, Mathf.Min(20, b.H * 11), p.Enabled ? new Color(.4f, .65f, .64f) : new Color(.3f, .45f, .55f, .2f));
             }
             var pos = game.Session.Player.Position;
             Panel(205 + pos.X * 10, 466 - pos.Y * 11, 10, 10, new Color(1, .73f, .4f));
@@ -136,6 +140,21 @@ namespace Wildbound.Unity
             if (Button(340, 471, 280, 49, "Keep exploring")) game.Resume();
             if (Button(640, 471, 296, 49, "Start a new journey")) game.NewJourney();
             Label(340, 552, 600, 24, "Thank you for taking the scenic route.", eyebrow);
+        }
+        private void CreatureHint()
+        {
+            Enemy closest = null; float range = 5.5f;
+            foreach (var enemy in game.Session.World.Enemies)
+            {
+                float distance = (enemy.Position - game.Session.Player.Position).Length;
+                if (enemy.Alive && enemy.Kind != EnemyKind.ClawPost && distance < range) { range = distance; closest = enemy; }
+            }
+            if (closest == null) return;
+            string[] tips = { "Practice linking three claws.", "Approach quietly. Catch the landing.", "Curl, leap, rest. Find your moment.", "Guarded front. Claw from above or behind.", "Three seeds, then an opening.", "The glowing line shows her dive." };
+            string state = closest.Phase == EnemyPhase.Tell ? "WARNING" : closest.Phase == EnemyPhase.Recover ? "OPENING" : closest.Phase == EnemyPhase.Stunned ? "STAGGERED" : closest.Phase == EnemyPhase.Active ? "COMMITTED" : "WATCHING";
+            Panel(24, 100, 284, 96, ink);
+            Label(39, 112, 255, 25, closest.Name.ToUpperInvariant() + "  /  " + state, new GUIStyle(eyebrow) { fontSize = 12 });
+            Label(39, 143, 255, 46, tips[(int)closest.Kind], new GUIStyle(text) { fontSize = 16 });
         }
         private static void Panel(float x, float y, float w, float h, Color color)
         { Color old = GUI.color; GUI.color = color; GUI.DrawTexture(new Rect(x, y, w, h), Texture2D.whiteTexture); GUI.color = old; }

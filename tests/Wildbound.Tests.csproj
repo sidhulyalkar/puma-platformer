@@ -7,5 +7,6 @@
   <ItemGroup>
     <Compile Include="../Assets/Wildbound/Core/*.cs" />
     <Compile Include="../Assets/Wildbound/Tests/EditMode/SimulationCases.cs" />
+    <Compile Include="../Assets/Wildbound/Tests/EditMode/CombatCases.cs" />
   </ItemGroup>
 </Project>

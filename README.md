@@ -1,10 +1,10 @@
 # Puma: Wildbound
 
-**Small paws. Some very big possibilities.**
+**Quiet paws. A wild heart after dark.**
 
-A Unity 2D exploration platformer about a curious mountain cat following a trail of light from an amber forest, through a lantern grotto, into a floating sky garden. Coil into a pounce, kick between walls, and borrow momentum from spring flowers. The main trail is forgiving; the scenic route asks more of your paws.
+A Unity 2D exploration platformer about a female puma hunting beneath the moon. Stalk a moss hare, turn a pounce into a claw strike, read a bristleback's charge, and wake a hidden bridge with a moonbloom. Follow the trail from a nocturnal forest through a lantern grotto to a floating sky garden. The main trail stays open; the scenic route asks more of your paws.
 
-This repository contains the **first development slice**, written for **Unity 6000.3.22f1**. The gameplay simulation has executable regression coverage. **Unity import, rendering, editor playtesting, and WebGL execution still need verification.** No browser release is published yet.
+This repository contains **v0.2: Night Hunt**, written for **Unity 6000.3.22f1**. The gameplay simulation has executable regression coverage. **Unity import, rendering, editor playtesting, and WebGL execution still need verification.** No browser release is published yet.
 
 ## Play in Unity
 
@@ -26,7 +26,11 @@ The opening scene builds its own world, camera, puma, interface, and audio. No a
 - Accelerated movement, variable jump height, coyote time, and buffered jumps.
 - **Charged pounce:** hold to coil; release for an arcing leap. Charge changes range; up/down changes the angle. One aerial pounce until you land or touch a spring flower.
 - Wall slides and wall kicks, with a brief steering lock so the kick actually clears the wall.
-- Moving platforms, spring flowers, thornlings you can hop over or put to sleep, and quick checkpoint recovery.
+- A three-strike claw chain, rising rake, confirmed-hit falling rebound, pounce rake, dash-claw, and ground roll with a short dodge window. A scratch post makes practicing safe.
+- **Hunting:** stalk to approach hares more closely; prey restores one heart and traversal resources. Three enemy defeats charge the next dash into **Moonfang Rush**. Damage clears that charge.
+- **Distinct encounters:** leaping thornlings, armored charging bristlebacks, three-shot reed spitters, and moths that telegraph a locked dive path.
+- **Moonwake:** claw blue moonblooms to reveal lasting bridges and dazzle nearby moths. Light marks terrain edges, warnings, scents, and attack arcs against dark scenery.
+- Moving platforms, spring flowers, five-heart vitality, and quick checkpoint recovery. Discovered checkpoints fully heal; falling preserves collectibles.
 - Twelve light motes and one hidden memory per region. **Discoveries are optional and survive falls.**
 - Local saves, a trail map with return travel to discovered worlds, a clean title screen, contextual lessons, gamepad input, mute, and reduced-motion options.
 - Original procedural cut-paper scenery, an articulated quadruped puma, pooled particles, and synthesized sound cues.
@@ -38,6 +42,12 @@ The opening scene builds its own world, camera, puma, interface, and audio. No a
 | Move / aim pounce | A/D or arrows; W/S to aim | Left stick |
 | Jump / wall kick | Space | South / A |
 | Charge and release pounce | Left Shift | West / X |
+| Claw / three-hit chain | J or left click | Right bumper |
+| Rising / falling rake | W+J / airborne S+J | Stick up/down + right bumper |
+| Pounce rake | J during a pounce | Right bumper during a pounce |
+| Dash-claw / Moonfang Rush | K | Right trigger |
+| Ground roll | L | East / B |
+| Stalk / reveal scents | Hold Q | Hold left trigger |
 | Enter arch | E | North / Y |
 | Pause | Escape | Start |
 | Field guide / map | C / Tab | Keyboard or mouse menu |
@@ -54,7 +64,7 @@ dotnet run --project tests/Wildbound.Tests.csproj --configuration Release
 python3 tools/validate_project.py
 ```
 
-**30 regression cases** cover movement, collision, recovery, saves, progression, and actual input-driven routes to all three exits. The GitHub Actions workflow runs both commands. These are simulation and structural checks, not a substitute for Unity runtime qualification.
+**73 regression cases** cover movement, combat timing, enemy patterns, armor, projectile collision ordering, low-ceiling rolls, hunting rewards, moonblooms, saves, and actual input-driven routes to all three exits. They include 81,000 seeded movement/combat stress steps. The GitHub Actions workflow runs both commands. These are simulation and structural checks, not a substitute for Unity runtime qualification.
 
 Run the same cases in **Window → General → Test Runner → EditMode**. On macOS, the command-line equivalents are:
 
@@ -82,6 +92,7 @@ Open `http://localhost:8000`. The eventual `sidhulyalkar.com` arcade can embed t
 ## Development notes
 
 - [Design direction and next milestones](docs/DESIGN.md)
+- [Night Hunt moves, enemies, and light rules](docs/NIGHT_HUNT.md)
 - [Architecture and editing the game](docs/ARCHITECTURE.md)
 - [References and asset provenance](docs/REFERENCES.md)
 

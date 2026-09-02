@@ -7,18 +7,26 @@ namespace Wildbound.Unity
     {
         private WildboundGame game;
         private AudioSource source;
-        private AudioClip jump, pounce, collect, bell, thump;
+        private AudioClip jump, pounce, collect, bell, thump, claw, armor, hurt, moonwake;
         public void Initialize(WildboundGame owner)
         {
             game = owner; source = gameObject.AddComponent<AudioSource>(); source.playOnAwake = false;
             jump = Tone("leap", 360, 780, .14f); pounce = Tone("pounce", 160, 620, .23f);
             collect = Tone("mote", 880, 1320, .2f); bell = Tone("discovery", 523, 1046, .6f);
             thump = Tone("landing", 150, 65, .12f);
+            claw = Whoosh(); armor = Tone("armor", 1250, 430, .12f);
+            hurt = Tone("hurt", 230, 95, .2f); moonwake = Tone("moonwake", 659, 1318, .85f);
         }
         public void Wake() { if (!game.Muted) source.PlayOneShot(bell, .15f); }
         public void React(GameEvent events)
         {
             if (game.Muted) return;
+            if ((events & GameEvent.Bloom) != 0) source.PlayOneShot(moonwake, .26f);
+            if ((events & GameEvent.Block) != 0) source.PlayOneShot(armor, .17f);
+            else if ((events & GameEvent.Hit) != 0) source.PlayOneShot(thump, .24f);
+            if ((events & GameEvent.Hurt) != 0) source.PlayOneShot(hurt, .24f);
+            if ((events & (GameEvent.Claw | GameEvent.DashClaw)) != 0) source.PlayOneShot(claw, .22f);
+            if ((events & GameEvent.Hunt) != 0) source.PlayOneShot(collect, .22f);
             if ((events & (GameEvent.Secret | GameEvent.Checkpoint | GameEvent.Portal)) != 0) source.PlayOneShot(bell, .3f);
             else if ((events & GameEvent.Collect) != 0) source.PlayOneShot(collect, .2f);
             if ((events & GameEvent.Pounce) != 0) source.PlayOneShot(pounce, .28f);
@@ -37,6 +45,18 @@ namespace Wildbound.Unity
             }
             AudioClip clip = AudioClip.Create(name, count, 1, rate, false); clip.SetData(data, 0); return clip;
         }
-        private void OnDestroy() { foreach (var clip in new[] { jump, pounce, collect, bell, thump }) if (clip != null) Destroy(clip); }
+        private static AudioClip Whoosh()
+        {
+            const int rate = 22050, count = 4400; var samples = new float[count]; var random = new System.Random(42);
+            float filtered = 0;
+            for (int i = 0; i < count; i++)
+            {
+                float t = (float)i / count;
+                filtered = Mathf.Lerp(filtered, (float)random.NextDouble() * 2 - 1, .22f);
+                samples[i] = filtered * Mathf.Sin(t * Mathf.PI) * (1 - t);
+            }
+            var clip = AudioClip.Create("claw sweep", count, 1, rate, false); clip.SetData(samples, 0); return clip;
+        }
+        private void OnDestroy() { foreach (var clip in new[] { jump, pounce, collect, bell, thump, claw, armor, hurt, moonwake }) if (clip != null) Destroy(clip); }
     }
 }

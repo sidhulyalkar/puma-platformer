@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Wildbound.Core
 {
-    public enum Surface { Stone, Moss, Spring, Moving }
+    public enum Surface { Stone, Moss, Spring, Moving, Moonbridge }
     public enum PickupKind { Mote, Memory }
 
     public sealed class Platform
@@ -12,6 +12,8 @@ namespace Wildbound.Core
         public Surface Surface;
         public float Travel, Phase;
         public V2 Delta;
+        public bool Enabled = true;
+        public int LightSource = -1;
         public Platform(Box box, Surface surface, float travel = 0, float phase = 0)
         { Home = Bounds = box; Surface = surface; Travel = travel; Phase = phase; }
         public void Update(float time)
@@ -30,13 +32,6 @@ namespace Wildbound.Core
         public V2 Position; public string Heading, Text;
         public Sign(float x, float y, string heading, string text) { Position = new V2(x, y); Heading = heading; Text = text; }
     }
-    public sealed class Critter
-    {
-        public V2 Home, Position; public float Range; public bool Asleep;
-        public Critter(float x, float y, float range) { Home = Position = new V2(x, y); Range = range; }
-        public Box Bounds { get { return new Box(Position.X - .45f, Position.Y, .9f, .75f); } }
-        public void Update(float time) { Position.X = Home.X + (float)Math.Sin(time * 1.2f) * Range; }
-    }
     public sealed class WorldDefinition
     {
         public string Name, Subtitle, Memory;
@@ -47,7 +42,8 @@ namespace Wildbound.Core
         public readonly List<Box> Hazards = new List<Box>();
         public readonly List<V2> Checkpoints = new List<V2>();
         public readonly List<Sign> Signs = new List<Sign>();
-        public readonly List<Critter> Critters = new List<Critter>();
+        public readonly List<Enemy> Enemies = new List<Enemy>();
+        public readonly List<Moonbloom> Blooms = new List<Moonbloom>();
         public void Add(float x, float y, float w, float h = 1, Surface surface = Surface.Moss, float travel = 0)
         { Platforms.Add(new Platform(new Box(x, y, w, h), surface, travel)); }
 
@@ -56,7 +52,7 @@ namespace Wildbound.Core
             if (biome < 0 || biome > 2) throw new ArgumentOutOfRangeException("biome");
             var w = new WorldDefinition { Biome = biome };
             w.Name = new[] { "THE AMBER CANOPY", "THE LANTERN GROTTO", "THE SKY GARDEN" }[biome];
-            w.Subtitle = new[] { "Follow the light. Find your feet.", "Some paths wake when you listen.", "There is always a little more sky." }[biome];
+            w.Subtitle = new[] { "Quiet paws beneath an amber moon.", "Wake the flowers. Follow their light.", "Hunt among the stars." }[biome];
             w.Memory = new[] { "The forest remembers every small beginning.", "Even the quietest places are full of life.", "Home is a trail you can choose again." }[biome];
             // Broad recovery floors alternate with traversable gaps; upper routes are optional.
             w.Add(-5, -3, 21, 4); w.Add(19, -3, 15, 4); w.Add(38, -3, 15, 4); w.Add(58, -3, 23, 4);
@@ -75,12 +71,30 @@ namespace Wildbound.Core
             for (int i = 0; i < xs.Length; i++) w.Pickups.Add(new Pickup(xs[i], ys[i]));
             w.Checkpoints.Add(new V2(23, 1)); w.Checkpoints.Add(new V2(60, 1));
             w.Hazards.Add(new Box(30, 1, 2, .45f)); w.Hazards.Add(new Box(66, 1, 1.8f, .45f));
-            w.Critters.Add(new Critter(64, 1, 1.1f));
+            w.Enemies.Add(new Enemy(EnemyKind.ClawPost, 5, 1));
+            w.Enemies.Add(new Enemy(EnemyKind.MossHare, 7.6f, 1, 1.1f));
+            w.Enemies.Add(new Enemy(EnemyKind.Thornling, 26.8f, 1, 1.2f));
+            w.Enemies.Add(new Enemy(EnemyKind.Bristleback, 71, 1, 2));
+            if (biome > 0)
+            {
+                w.Enemies.Add(new Enemy(EnemyKind.LanternMoth, 35, 7.5f, 2));
+                // This moth guards the second bloom within its unobstructed dazzle radius.
+                w.Enemies.Add(new Enemy(EnemyKind.LanternMoth, 47.5f, 5.5f, 1));
+            }
+            w.Enemies.Add(new Enemy(EnemyKind.ReedSpitter, biome == 2 ? 63 : 51, biome == 2 ? 3.8f : 10));
+            w.Blooms.Add(new Moonbloom(12.8f, 1.6f));
+            w.Blooms.Add(new Moonbloom(47.5f, 1.6f));
+            w.Platforms.Add(new Platform(new Box(18, 6.8f, 3, .35f), Surface.Moonbridge) { LightSource = 0, Enabled = false });
+            w.Platforms.Add(new Platform(new Box(54, 11.8f, 4, .35f), Surface.Moonbridge) { LightSource = 1, Enabled = false });
             w.Signs.Add(new Sign(3, 1, "A SMALL CAT. A WIDE WORLD.", "A / D or arrows to roam. SPACE to jump. Hold for height; tap for a hop."));
             w.Signs.Add(new Sign(13, 1, "COIL. THEN FLY.", "Hold SHIFT to crouch and charge. Release to pounce. W / S aim up or down."));
             w.Signs.Add(new Sign(23, 1, "TAKE THE SCENIC ROUTE", "Glowing stones remember your trail. The high path hides a memory. Every discovery is optional."));
             w.Signs.Add(new Sign(39, 1, "BORROW A LITTLE SPRING", "Land on a pink flower to bounce. It restores your pounce. Charge again in the air!"));
-            w.Signs.Add(new Sign(47, 1, "CLAWS OUT", "Push into a wall to slide. Press SPACE to kick away. Leap over thornlings, or land on them."));
+            w.Signs.Add(new Sign(47, 1, "WAKE THE MOON", "J to claw a moonbloom. Her strike wakes a lasting light bridge and dazzles nearby moths."));
+            w.Signs.Add(new Sign(5.5f, 1, "A HUNTER'S HANDS", "J to claw. Tap again as a sweep ends to chain three strikes. W + J lifts. Try the scratch post."));
+            w.Signs.Add(new Sign(8, 1, "QUIET PAWS", "Hold Q to stalk and see scents. Hares flee in hops. Catch one to restore a heart and your pounce."));
+            w.Signs.Add(new Sign(25, 1, "READ THE LEAP", "Thornlings curl, then leap. L rolls through; K lunges with claws. Airborne S + J rebounds on a hit."));
+            w.Signs.Add(new Sign(68, 1, "LET HIM COMMIT", "Bristlebacks guard their fronts. Watch the amber tell, dodge the charge, then claw the exposed back."));
             w.Signs.Add(new Sign(74, 1, "A DOOR TO SOMEWHERE", biome == 2 ? "Press E at the arch to finish your journey. You can keep exploring afterward." : "Press E at the arch to discover the next world."));
             if (biome == 1)
             {

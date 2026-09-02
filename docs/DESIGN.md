@@ -1,55 +1,53 @@
-# Design: make curiosity feel good in the hands
+# Design: the night is hers
 
-The fantasy is a small, powerful animal in a world worth exploring. Movement should look and feel feline: a low coil, a long arcing leap, claws catching a wall, a tail balancing in flight, and a soft landing. There is no timer, life counter, or required currency grind. The reward for competence is another route and another view.
+The fantasy is a curious, powerful female puma in a world worth exploring. Movement and combat share the same language: a low coil, a long leap, a committed sweep, a soft roll, claws catching a wall, and a tail balancing in flight. Hunting should create routes and recover momentum. Exploration never requires clearing an arena or grinding prey.
 
-## What is implemented
+The nocturnal setting is part of play. Warm fur and pale terrain edges identify the puma and safe landings. Amber warnings identify committed attacks. Blue moonblooms react to her claws, revealing bridges and interrupting moths. Darkness supplies atmosphere without requiring players to navigate invisible hazards.
 
-The first slice has three regions built from a shared, tested route spine, with different palettes, scenery, and additional upper platforms. This establishes the mechanics and progression; it does **not** yet provide three fully bespoke levels. Authored terrain is rectangular and solid. Slopes, one-way platforms, ledge grabs, and arbitrary Unity physics interactions are outside this version.
+## Implemented in v0.2
 
-| Mechanic | Default | Design reason |
+Three regions share a tested route spine with different night palettes, scenery, and additional upper platforms. They establish mechanics and progression; they are not yet three fully bespoke levels. All terrain is rectangular and solid except dormant moonbridges. Slopes, one-way platforms, ledge grabs, and arbitrary Unity physics interactions remain outside this version.
+
+| Mechanic | Default | Purpose |
 | --- | --- | --- |
-| Simulation step | 120 Hz | Fine collision increments and consistent simulation inputs |
-| Run speed | 8.5 units/s | Enough ground speed to make short jumps useful |
-| Coyote time / jump buffer | 110 ms / 130 ms | Forgive slightly early or late inputs |
-| Jump launch / gravity | 14.5 units/s / 34 units/s² | A readable, compact arc; releasing reduces height |
-| Full coil | 650 ms | A visible anticipation pose with a meaningful timing tradeoff |
-| Pounce launch | 13–24 units/s | Holding changes travel, not just an animation |
-| Pounce aim | Shallow forward, steep upward, downward in air | Create choices without mouse aiming |
-| Wall slide / kick lock | 3 units/s / 160 ms | Let players assess a wall and clear it when kicking |
-| Spring flower | 20 units/s upward + pounce refresh | Connect terrain and movement into chains |
-| Recovery | 300 ms freeze at checkpoint | Reset the attempt quickly while keeping discoveries |
+| Simulation | 120 Hz | Consistent timing and small collision increments |
+| Run speed | 8.5 units/s | Useful short jumps and controllable approaches |
+| Coyote / jump buffer | 110 ms / 130 ms | Forgive slightly early or late inputs |
+| Jump / gravity | 14.5 units/s / 34 units/s² | Compact arc; releasing reduces height |
+| Full coil | 650 ms | Anticipation and a meaningful range tradeoff |
+| Pounce launch | 13–24 units/s | Holding changes travel, with directional aiming |
+| Wall slide / kick lock | 3 units/s / 160 ms | Time to read a wall and reliably clear it |
+| Spring flower | 20 units/s upward | Refill pounce and aerial dash to link routes |
+| Dash-claw | 21 units/s for 180 ms | Close distance and strike through an opening |
+| Ground roll | 340 ms; middle 210 ms dodges | A timed defensive choice with vulnerable ends |
+| Vitality / recovery | Five hearts; 300 ms checkpoint freeze | Recover quickly while keeping discoveries |
+| Moonwake | Six-second flare; bridge lasts for the visit | A visible environmental response without an expiring platform trap |
 
-These are starting values, **not playtest-proven tuning**. The independent core makes it cheap to preserve regression coverage while changing them.
+These are starting values, not playtest-proven tuning. See [Night Hunt](NIGHT_HUNT.md) for attack, enemy, and resource rules.
 
 ## Teaching order
 
-1. Safe ground introduces movement and short/held jumps.
-2. The first gap introduces coiling, release, and aiming.
-3. A checkpoint establishes that exploration is forgiving; an upper trail tempts a detour.
-4. A spring flower demonstrates that the environment can replenish a pounce.
-5. An alcove introduces sliding and wall kicks. Thornlings can be avoided, bounced on, or pounced through.
-6. A clear arch introduces intentional travel to another world. The trail map allows revisiting discovered regions.
+1. Safe ground introduces short/held jumps. The scratch post introduces a three-claw chain without danger.
+2. The first hare introduces stalking and timing a strike around a hop. Capturing prey restores vitality and traversal resources.
+3. The first moonbloom introduces a response to claws; its bridge connects upper ledges. The first gap teaches charged pounces.
+4. A checkpoint keeps discoveries safe. A thornling's curl introduces a warning, a committed jump, and an opening to counter.
+5. A spring flower refills movement. The second bloom in a wall-kick alcove connects light, moth interruption, and an upper route in the grotto and sky garden.
+6. Reed spitters teach cover and volley timing; the final bristleback teaches jumping above armor or rolling behind a committed charge.
+7. An arch introduces intentional world travel. The map allows return visits with collectible progress intact.
 
-The contextual text is proximity-based in v0.1. It does not yet verify that someone performed a lesson. A short input-aware tutorial should replace repeated hints after watching first-time players.
+Tutorial text is proximity-based and does not yet confirm that the player performed a lesson. The field guide carries a lot of new actions; an input-aware teaching sequence should replace that burden after first-time playtests.
 
-## Critique of this slice
+## Design boundaries and next milestones
 
-- The shared route spine is useful for regression coverage but too repetitive for a showcase release. Build bespoke spaces once the movement tuning is stable.
-- Charged pouncing is the strongest differentiator. Validate whether 650 ms feels satisfying or interrupts flow; compare shorter coils with longer anticipatory poses at high charge.
-- The puma and cut-paper environment are original and lightweight, but the presentation has not been seen in a running Unity editor in this development environment. Camera framing, silhouette readability, landing poses, and color contrast are unqualified.
-- The three exit routes are exercised by input simulation. Hidden-memory routes and casual-player discoverability still need dedicated route verification and human playtests.
-- A custom rectangular solver is deliberately small and reproducible. It must not be mixed with Rigidbody2D movement without defining ownership of collision and movement.
-- No music, authored sprite animation, mobile controls, control remapping, or accessibility narration is claimed.
+1. **Unity qualification:** clean import, run EditMode and PlayMode, inspect the actual scene, try every move and counter, collect each memory, and build WebGL. Resolve real console and visual issues before extending scope.
+2. **Combat and movement feel:** record claw timing, small jumps, full coils, air-dash chains, low-ceiling rolls, and enemy warnings. Check whether the falling rebound feels earned and whether roll recovery is readable. Tune from observation.
+3. **One showcase night region:** replace the canopy's repeated route spine with a handcrafted loop: safe lower trail, fast hunting route, and a moonbloom detour that reconnects to a checkpoint. Make revealed paths visible from their activation point and give their destinations a reason to visit.
+4. **Light identity:** assess how well scent rings, moonwake, moth reactions, and glowing warnings explain themselves. Only then consider light-carrying prey, optional darkness routes, or a light-reactive guardian. These are future ideas, not shipped mechanics.
+5. **Distinct worlds:** give each region its own geometry and a new use of the same moves. Test bridge and hidden-memory reachability deliberately; the current exit tests do not prove every scenic route.
+6. **Arcade release:** browser and controller qualification, measured download/frame-time/memory budgets, an actual-game trailer, and integration into sidhulyalkar.com.
 
-## Next milestones, in order
+The custom rectangular solver owns movement and must not be mixed with Rigidbody2D motion without redefining collision ownership. Art, audio cues, and move implementations are original. There is no background music, boss encounter, dynamic shadow simulation, mobile control scheme, or control remapping yet.
 
-1. **Unity qualification:** clean import, EditMode tests, play through the opening tutorial, inspect the puma silhouette, collect each memory, and build WebGL. Resolve actual console errors and visual issues before adding scope.
-2. **Movement laboratory:** collect short recordings of tap/hold jumps, minimum/maximum coils, wall kicks, and flower chains. Tune camera lead and deceleration. Add regression cases only for observed or high-risk failures.
-3. **One showcase region:** replace the canopy's shared spine with a handcrafted loop: safe lower trail, satisfying fast route, and a surprising upper route that reconnects to the checkpoint. Add landmarks visible before they become reachable.
-4. **Exploration identity:** prototype scent trails that briefly reveal nearby hidden life, then test whether they help players notice routes without telling them exactly where to go. Consider perch interactions and wildlife responses before adding conventional combat.
-5. **Distinct worlds:** give the grotto light-reactive plants and the sky garden wind-assisted traversal only after the base controls are stable. Each new behavior needs a safe introduction and a route that uses it creatively.
-6. **Arcade release:** browser qualification, gamepad/menu pass, download/CPU/memory measurements, a short trailer captured from the actual game, and integration into the personal site.
+## First-playtest targets
 
-## Playtest acceptance targets
-
-These are prospective goals, not measured outcomes: a new player starts moving within 15 seconds, performs a deliberate pounce within 60 seconds, identifies the checkpoint without an explanation, and finds at least one optional route in a five-minute session. Record where they hesitate; don't coach them past confusing instructions.
+These are prospective goals, not measured outcomes: a new player moves within 15 seconds, deliberately pounces within 60 seconds, understands a warning before taking repeated hits, and finds at least one optional route in five minutes. Ask them to demonstrate one claw chain, a safe roll, and a moonbloom response. Record hesitation and missed cues instead of coaching them through unclear instructions.

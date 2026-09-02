@@ -5,7 +5,7 @@ using Wildbound.Core;
 namespace Wildbound.Unity
 {
     /// <summary>Original lightweight cut-paper art. No downloaded art or editor-generated assets required.</summary>
-    public sealed class WorldView : MonoBehaviour
+    public sealed partial class WorldView : MonoBehaviour
     {
         private WildboundGame game;
         private Camera cameraView;
@@ -14,7 +14,6 @@ namespace Wildbound.Unity
         private Material flat;
         private readonly List<Transform> platforms = new List<Transform>();
         private readonly List<Transform> pickups = new List<Transform>();
-        private readonly List<Transform> critters = new List<Transform>();
         private readonly List<SpriteRenderer> checkpoints = new List<SpriteRenderer>();
         private readonly List<Transform> paws = new List<Transform>();
         private readonly List<Transform> tail = new List<Transform>();
@@ -42,17 +41,17 @@ namespace Wildbound.Unity
         private void Palette()
         {
             int b = game.Session.Save.Biome;
-            sky = Hex(new[] { "163d48", "171d3c", "566879" }[b]);
-            distant = Hex(new[] { "245b5a", "292c52", "819995" }[b]);
-            rock = Hex(new[] { "254950", "333653", "485971" }[b]);
-            moss = Hex(new[] { "a0bc79", "77c9ba", "b1ccb3" }[b]);
+            sky = Hex(new[] { "0b1527", "0f1225", "101c35" }[b]);
+            distant = Hex(new[] { "172d3c", "242743", "2b3e58" }[b]);
+            rock = Hex(new[] { "223840", "30324e", "34475d" }[b]);
+            moss = Hex(new[] { "80b8b0", "77c9ba", "a0bfd2" }[b]);
             light = Hex(new[] { "ffe6ae", "b4f7e0", "fff0c9" }[b]);
             cameraView.backgroundColor = sky;
         }
         public void Rebuild()
         {
             if (scenery != null) { scenery.gameObject.SetActive(false); Destroy(scenery.gameObject); }
-            platforms.Clear(); pickups.Clear(); critters.Clear(); checkpoints.Clear(); paws.Clear(); tail.Clear(); sparks.Clear();
+            platforms.Clear(); pickups.Clear(); checkpoints.Clear(); paws.Clear(); tail.Clear(); sparks.Clear();
             random = new System.Random(407 + game.Session.Save.Biome);
             scenery = new GameObject("World art").transform; scenery.SetParent(transform);
             Palette(); Background();
@@ -87,14 +86,7 @@ namespace Wildbound.Unity
                 Shape("beacon stem", square, new Vector2(p.X, p.Y + 1.3f), new Vector2(.04f, .5f), moss, 11);
                 Shape("beacon bud", disc, new Vector2(p.X, p.Y + 1.6f), new Vector2(.22f, .22f), light, 12);
             }
-            foreach (var c in game.Session.World.Critters)
-            {
-                var root = new GameObject("Sleepy thornling").transform; root.SetParent(scenery);
-                Shape("body", disc, new Vector2(0, .3f), new Vector2(.9f, .6f), Hex("be837f"), 16, root);
-                for (int i = -1; i <= 1; i++) Shape("thorn", triangle, new Vector2(i * .23f, .65f), new Vector2(.3f, .32f), Hex("edbeb0"), 17, root);
-                Shape("eye", disc, new Vector2(.2f, .37f), new Vector2(.09f, .1f), sky, 18, root);
-                critters.Add(root);
-            }
+            BuildCombatArt();
             BuildPortal(game.Session.World.Exit); BuildPuma();
             for (int i = 0; i < 72; i++)
             {
@@ -143,7 +135,12 @@ namespace Wildbound.Unity
             Shape("earth", square, Vector2.zero, new Vector2(w, h), rock, 5, root);
             Shape("grassy lip", square, new Vector2(0, h / 2 - .07f), new Vector2(w, .14f), moss, 7, root);
             Shape("edge shadow", square, new Vector2(0, h / 2 - .22f), new Vector2(w, .1f), rock * new Color(.7f, .7f, .7f, 1), 6, root);
-            if (p.Surface == Surface.Spring)
+            if (p.Surface == Surface.Moonbridge)
+            {
+                Shape("moon edge", square, new Vector2(0, h / 2), new Vector2(w, .06f), light, 9, root);
+                for (int i = 0; i < w; i++) Shape("moon rune", disc, new Vector2(i - w / 2 + .5f, 0), Vector2.one * .1f, light, 10, root);
+            }
+            else if (p.Surface == Surface.Spring)
             {
                 for (int i = -2; i <= 2; i++)
                     Shape("spring petal", disc, new Vector2(i * .26f, h / 2 + .12f + Mathf.Abs(i) * .07f), new Vector2(.6f, .24f), Hex("f1a5b6"), 10, root);
@@ -216,6 +213,7 @@ namespace Wildbound.Unity
             if ((e & (GameEvent.Land | GameEvent.Spring | GameEvent.Pounce | GameEvent.WallKick | GameEvent.Stomp)) != 0)
             { impact = .22f; Emit(9, game.Session.Player.Position, moss); }
             if ((e & GameEvent.Pounce) != 0) shake = .12f;
+            CombatFeedback(e);
             if ((e & (GameEvent.Collect | GameEvent.Secret)) != 0) Emit(12, game.Session.Player.Position + new V2(0, .8f), light);
         }
         private void LateUpdate()
@@ -229,11 +227,12 @@ namespace Wildbound.Unity
                 var pickup = session.World.Pickups[i]; pickups[i].gameObject.SetActive(!pickup.Collected);
                 pickups[i].position = Point(pickup.Position) + Vector3.up * (game.ReducedMotion ? 0 : Mathf.Sin(t * 2.3f + i) * .12f);
             }
-            for (int i = 0; i < critters.Count; i++) { critters[i].position = Point(session.World.Critters[i].Position); critters[i].localScale = new Vector3(1, session.World.Critters[i].Asleep ? .35f : 1, 1); }
+            UpdateCombatArt();
             for (int i = 0; i < checkpoints.Count; i++) checkpoints[i].color = session.Save.Checkpoints[session.Save.Biome] == i ? Hex("fff6d8") : distant;
             cat.position = Point(p.Position);
-            float crouch = p.Charging ? p.Charge * .28f : 0;
+            float crouch = p.LowProfile ? .42f : p.Stalking ? .22f : p.Charging ? p.Charge * .28f : 0;
             cat.localScale = new Vector3(p.Facing * (1 + crouch * .3f), 1 - crouch, 1);
+            cat.localRotation = Quaternion.Euler(0, 0, p.RollTime > 0 ? p.Facing * (1 - p.RollTime / p.Tuning.RollSeconds) * -360 : 0);
             float gait = p.Grounded ? Mathf.Sin(t * Mathf.Abs(p.Velocity.X) * 2.1f) : 0;
             body.localRotation = Quaternion.Euler(0, 0, p.Grounded ? gait * 2 : Mathf.Clamp(p.Velocity.Y, -18, 18) * .7f);
             head.localRotation = Quaternion.Euler(0, 0, p.Charging ? -12 : Mathf.Sin(t * 2) * 3);
@@ -244,6 +243,7 @@ namespace Wildbound.Unity
                 paws[i].localRotation = Quaternion.Euler(0, 0, p.Grounded ? stride * 28 : (i < 2 ? -50 : 50));
             }
             for (int i = 0; i < tail.Count; i++) tail[i].localPosition = new Vector3(-.57f - i * .13f, .65f + Mathf.Sin(t * 3 - i * .45f) * .13f + i * .035f, 0);
+            ApplyCombatPose();
             if (!session.Paused)
             {
                 impact = Mathf.Max(0, impact - dt); shake = Mathf.Max(0, shake - dt);
@@ -286,7 +286,8 @@ namespace Wildbound.Unity
             for (int y = 0; y < size; y++) for (int x = 0; x < size; x++)
             {
                 float px = (x + .5f) / size * 2 - 1, py = (y + .5f) / size * 2 - 1;
-                bool fill = shape == 0 || (shape == 1 ? px * px + py * py < .97f : Mathf.Abs(px) < (1 - py) * .5f);
+                float radius = px * px + py * py;
+                bool fill = shape == 0 || (shape == 1 ? radius < .97f : shape == 3 ? radius < .97f && radius > .78f : Mathf.Abs(px) < (1 - py) * .5f);
                 pixels[y * size + x] = fill ? Color.white : Color.clear;
             }
             texture.SetPixels(pixels); texture.Apply(false, true);
@@ -296,7 +297,7 @@ namespace Wildbound.Unity
         private static Vector3 Point(V2 p) { return new Vector3(p.X, p.Y, 0); }
         private void OnDestroy()
         {
-            foreach (var s in new[] { square, disc, triangle }) if (s != null) { Destroy(s.texture); Destroy(s); }
+            foreach (var s in new[] { square, disc, triangle, ring }) if (s != null) { Destroy(s.texture); Destroy(s); }
             if (flat != null) Destroy(flat);
         }
     }

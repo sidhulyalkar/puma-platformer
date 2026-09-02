@@ -3,9 +3,10 @@
 ## Verified locally on 2026-09-02
 
 - The production core and the shared test cases compile with the .NET 8 C# compiler with warnings treated as errors.
-- **30/30 simulation cases pass.** Coverage includes jump height, coyote/buffering windows, charge range, air-pounce limits, wall behavior, high-speed collisions, ceilings, springs, moving-platform carry, hazards, thornlings, checkpoints, save sanitization, return travel, pause, and progression.
-- The input-driven route test reaches all three exits without editing player position or bypassing collision. With its fixed policy, canopy/grotto complete with no recoveries and the sky garden with one. This is a reachability check, not a human difficulty estimate.
-- Deterministic replay and 36,000 seeded stress steps across the regions stay finite and within world boundaries.
+- **73/73 simulation cases pass.** The original 30 cover movement, collision, recovery, saves, and progression. The 43 combat cases cover attack timing, buffering and recovery cancels, once-per-target hits, armor, directed rakes, dash limits, low-ceiling rolls, dodge windows, damage grace, stalking, prey rewards, enemy warnings and committed targets, projectile cover and nearest-hit ordering, moonblooms, and pause/respawn cleanup.
+- The input-driven route test reaches all three exits without editing player position or bypassing collision, within 3,600 ticks per region and at most one checkpoint recovery. This is a reachability check, not a human difficulty estimate.
+- Deterministic replay and 36,000 seeded movement stress steps across the regions stay finite and within world boundaries. Another 45,000 combat stress steps check for nonfinite state and embedding in solid terrain.
+- The moonbloom interruption test exercises both an isolated fixture and the authored grotto/sky encounters, confirming a real claw strike can dazzle their nearby moths.
 - The structural validator checks unique committed asset GUIDs, the entry scene/build settings, input mode, assembly JSON, and WebGL loader placeholders.
 
 The normal SDK CLI cannot start in this container because its process-information query is unsupported. Local verification therefore invoked the installed .NET 8 Roslyn compiler and runtime directly; GitHub CI uses the standard `dotnet run` command. Both compile the same source files.
@@ -23,12 +24,19 @@ The Unity wrapper scripts and EditMode adapter are provided for an activated edi
 - [ ] Run the PlayMode scene smoke test; it checks world construction, one puma, renderers, shader presence, and pause. This test is supplied but has not been executed here.
 - [ ] Open the entry scene through the Wildbound menu, start with Enter, and confirm a single recognizable quadruped puma.
 - [ ] Confirm keyboard and gamepad movement, tap/held jumps, full/minimum pounces, and aim directions.
+- [ ] Practice all three claws on the scratch post. Check windup visibility, queued follow-ups, rising/falling rakes, dash-claws, and recovery cancels with both input devices.
+- [ ] Compare drawn claw arcs with the deliberately forgiving strike boxes. Confirm damage and contact feedback feel fair at their edges.
+- [ ] Roll under a ceiling, stay crouched until clear, dodge a projectile, and confirm a mistimed roll can still take damage. Verify the blue protection halo matches the dodge/grace window.
+- [ ] Stalk and chase hares, take damage, hunt to restore a heart, and spend three instinct on an empowered dash.
+- [ ] Read each enemy warning without relying only on color: thornling curl, boar charge direction, spitter three-shot rhythm, and moth dive line. Test armor from front, behind, and above.
+- [ ] Strike both moonblooms; follow the revealed bridges. Dazzle the moth above the second bloom in the grotto and sky garden. Verify the bridge remains solid after its flare ends and after a fall.
 - [ ] Test input at 30/60/120 FPS, rapid press/release, pause while charging, and focus loss while moving.
 - [ ] Verify leg/tail animation, material tinting, terrain collision alignment, camera look-ahead, text contrast, and UI at 16:9 and resized windows.
 - [ ] Complete the main trail and deliberately collect each hidden memory. Record any inaccessible or unclear approach.
-- [ ] Fall onto hazards, step into thornlings, stomp and pounce through them, and verify fair recovery.
+- [ ] Fall onto hazards, exhaust vitality, and verify checkpoint recovery clears attacks/projectiles while retaining discoveries. Check that dead enemies stay down until leaving the region.
 - [ ] Reload after collecting, changing regions, and choosing a checkpoint. Revisit earlier worlds through the map.
 - [ ] Confirm audio stays muted when requested, reduced motion disables shake, and New Journey requires the second click.
+- [ ] Inspect night contrast on the actual display: the puma, landable edges, brambles, enemies, dormant bridges, and small projectiles must remain distinguishable. Stylized glow is not a real-time shadow system.
 - [ ] Capture a short actual-game recording for the next movement/visual critique.
 
 ## Browser qualification
