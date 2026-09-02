@@ -141,6 +141,7 @@ namespace Wildbound.Tests
         private static void CheckpointRecovery()
         {
             var g = new GameSession(); g.Player.Reset(new V2(23, 1)); Tick(g, 2); Check(g.Save.Checkpoints[0] == 0, "Checkpoint not recorded");
+            g.World.Hazards.Add(new Box(30, 1, 2, .45f)); // Isolate recovery from the introductory region layout.
             g.Save.Collected[0] = 2; g.Player.Reset(new V2(30.5f, 1)); g.Step(new PlayerInput());
             Check(g.Deaths == 1 && Near(g.Player.Position.X, 23) && g.Save.Collected[0] == 2, "Recovery lost position or discoveries");
         }

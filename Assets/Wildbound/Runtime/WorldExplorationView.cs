@@ -22,6 +22,20 @@ namespace Wildbound.Unity
                 var art = new PlaceArt { Place = place };
                 var root = new GameObject(place.Name).transform; root.SetParent(scenery); root.position = Point(place.Position);
                 art.Halo = Shape("wild place glow", disc, new Vector2(0, .3f), new Vector2(2.5f, 1.3f), new Color(1, .8f, .4f, .08f), 4, root);
+                if (place.Id == WildPlaceId.StillwaterShelf)
+                {
+                    Shape("stillwater reflection", disc, new Vector2(0, .025f), new Vector2(2.8f, .13f), Hex("598d9e"), 9, root);
+                    for (int i = -1; i <= 1; i++) Shape("pool glint", square, new Vector2(i * .5f, .08f), new Vector2(.32f, .025f), light, 10, root);
+                }
+                if (place.Id == WildPlaceId.CloudNest)
+                    for (int i = -2; i <= 2; i++)
+                        Shape("nest twig", square, new Vector2(i * .23f, .11f), new Vector2(.8f, .05f), Hex("d3b99b"), 10, root).transform.localRotation = Quaternion.Euler(0, 0, i * 18);
+                if (place.Id == WildPlaceId.LanternRoost)
+                    for (int i = -1; i <= 1; i++)
+                    {
+                        Shape("roost thread", square, new Vector2(i * .65f, 1.7f), new Vector2(.025f, 1), moss, 8, root);
+                        Shape("sleeping lantern", disc, new Vector2(i * .65f, 1.2f), new Vector2(.2f, .35f), light, 9, root);
+                    }
                 // Low marks fit inside the root hollow and never suggest a solid obstacle.
                 Shape("resting leaves", disc, new Vector2(0, .035f), new Vector2(1.35f, .1f), Hex("ab986f"), 9, root);
                 for (int i = -2; i <= 2; i++)

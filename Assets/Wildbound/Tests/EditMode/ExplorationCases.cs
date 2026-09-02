@@ -189,7 +189,9 @@ namespace Wildbound.Tests
             for (int i = 0; i < 240 && !spring; i++) { g.Step(new PlayerInput { Move = Steer(g, 11), JumpPressed = i == 0, JumpHeld = true }); spring = (g.Events & GameEvent.Spring) != 0; }
             Check(spring, "Route did not use the spring");
             Drop(g, 17, 5.7f); Leap(g, 26, 9.7f); Leap(g, 38, 13.7f); Leap(g, 48, 17.7f);
-            Leap(g, 52.5f, 18.6f); Leap(g, 61, 21.7f); Drop(g, 67, 18.85f); Drop(g, 73, 1); Walk(g, 60); FinishRoute(g, 1);
+            Leap(g, 52.5f, 18.6f); Leap(g, 61, 21.7f); Drop(g, 67, 18.85f); Drop(g, 73, 1); Walk(g, 62.8f);
+            g.Step(new PlayerInput { JumpPressed = true, JumpHeld = true, Move = -1 });
+            Drop(g, 59, 1); Walk(g, 60); FinishRoute(g, 1);
         }
     }
 }

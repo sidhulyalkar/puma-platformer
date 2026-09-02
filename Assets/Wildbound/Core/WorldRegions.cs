@@ -21,7 +21,6 @@ namespace Wildbound.Core
             w.Add(23, 4.2f, 4); w.Add(29, 7.1f, 5); w.Add(37, 10.1f, 6);
             w.Add(39, 1, 2, .35f, Surface.Spring); w.Add(43, 5.7f, 4, .7f);
             w.Add(53, 4, 4); w.Add(62, 3, 5, .7f); w.Add(69, 5.5f, 4, .7f);
-            w.Hazards.Add(new Box(30, 1, 2, .45f)); w.Hazards.Add(new Box(66, 1, 1.8f, .45f));
             w.Enemies.Add(new Enemy(EnemyKind.Thornling, 27, 1, 1.2f));
             w.Enemies.Add(new Enemy(EnemyKind.Bristleback, 71, 1, 2));
             w.Enemies.Add(new Enemy(EnemyKind.ReedSpitter, 55, 5));
@@ -112,7 +111,7 @@ namespace Wildbound.Core
             PickupsAt(w, new V2(61, 22.9f), new V2(7, 2.1f), new V2(11, 2.5f), new V2(17, 6.8f),
                 new V2(26, 10.8f), new V2(32, 12.8f), new V2(38, 14.8f), new V2(48, 18.8f), new V2(53, 19.7f),
                 new V2(67, 19.8f), new V2(60, 2.1f), new V2(68, 7.1f), new V2(73, 2.1f));
-            w.Signs.Add(new Sign(9, 1, "BORROW THE SKY", "Pink flowers launch you and restore your pounce. Hold SHIFT / X in the air, aim up, and release toward the broad island."));
+            w.Signs.Add(new Sign(9, 1, "BORROW THE SKY", "Jump onto a pink flower to launch and restore your pounce. Hold SHIFT / X in the air, aim up, and release toward the broad island."));
             w.Signs.Add(new Sign(26, 9.7f, "A NEST BETWEEN LEAPS", "Land to refresh your pounce and dash. Follow the golden path; the crown waits above the moving perch."));
             w.Signs.Add(new Sign(47, 1, "LIGHT BELOW THE WINGS", "Claw the blue flower to interrupt the moth. The lower islands offer another route across the garden."));
         }
