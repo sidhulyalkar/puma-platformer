@@ -1,5 +1,13 @@
 # Validation and release boundary
 
+## Menu integration qualification — 2026-09-03
+
+- **152/152 shared regression cases pass locally**, adding 19 controller cases to the 133 First Paws cases. Coverage includes canceled reset requests, later menu visits, focus loss, mutually exclusive overlays, retained pause origins, completion/ending recovery, map travel, and trial return.
+- **5,000 seeded navigation steps** assert that the visible screen and simulation pause state stay consistent and that only explicit confirmation can replace the session. These are separate from the existing 99,000 physics/combat/trial stress steps.
+- **28 C# sources parse with zero syntax errors**. Structural validation passes with **47 unique asset GUIDs** and verifies the WebGL loader version agrees with the project version.
+- The same local Roslyn/.NET method described below runs the production `JourneyFlow` and shared cases. Use PR #4's exact-commit checks for standard project-command CI results.
+- Two Unity-only JSON tests now cover new and legacy save decoding; an additional PlayMode smoke test checks the host's menu commands and reset cancellation without replacing the loaded journey. **These engine tests have been authored, not executed.** They do not change the Unity/WebGL release boundary.
+
 ## First Paws qualification — 2026-09-03
 
 - **133/133 simulation cases pass locally**, including all 112 Living Trails cases and 21 new practice/guidance cases. The new opening route starts at the authored spawn, uses only input, keeps wildlife active, practices six actions, and discovers Root Hollow without a death or a trial.
@@ -33,7 +41,8 @@ The Unity wrapper scripts and EditMode adapter are provided for an activated edi
 
 - [ ] Import with Unity 6000.3.22f1 and confirm zero compile errors.
 - [ ] Run all EditMode cases.
-- [ ] Run the PlayMode scene smoke test; it checks world construction, one puma, renderers, shader presence, and pause. This test is supplied but has not been executed here.
+- [ ] Run both PlayMode smoke tests; they check world construction, one puma, renderers, shader presence, pause, menu transitions, and reset cancellation. These tests are supplied but have not been executed here.
+- [ ] Run the two Unity JSON compatibility tests in EditMode alongside the shared regression suite. Verify actual PlayerPrefs persistence separately with reloads.
 - [ ] Open the entry scene through the Wildbound menu, start with Enter, and confirm a single recognizable quadruped puma.
 - [ ] Confirm keyboard and gamepad movement, tap/held jumps, full/minimum pounces, and aim directions.
 - [ ] Practice all three claws on the scratch post. Check windup visibility, queued follow-ups, rising/falling rakes, dash-claws, and recovery cancels with both input devices.
@@ -51,7 +60,8 @@ The Unity wrapper scripts and EditMode adapter are provided for an activated edi
 - [ ] Complete the main trail and deliberately collect each hidden memory. Record any inaccessible or unclear approach.
 - [ ] Fall onto hazards, exhaust vitality, and verify checkpoint recovery clears attacks/projectiles while retaining discoveries. Check that dead enemies stay down until leaving the region.
 - [ ] Reload after collecting, changing regions, and choosing a checkpoint. Revisit earlier worlds through the map.
-- [ ] Confirm audio stays muted when requested, reduced motion disables shake, and New Journey requires the second click.
+- [ ] Confirm audio stays muted when requested and reduced motion disables shake. New Journey must open a separate dialog; Escape, Keep my trail, and focus loss must cancel it. Resume, reopen Pause, and request a new journey again: progress must remain until Start fresh is chosen.
+- [ ] Open C from the title, playing, Pause, and Ending. Switch C/Tab overlays and close them; each must return to its origin. Focus loss during a playing overlay must make its return stay paused. Check Escape/Start can leave the ending and that a menu click cannot also claw on the same frame.
 - [ ] Inspect night contrast on the actual display: the puma, landable edges, brambles, enemies, dormant bridges, and small projectiles must remain distinguishable. Stylized glow is not a real-time shadow system.
 - [ ] Capture a short actual-game recording for the next movement/visual critique.
 

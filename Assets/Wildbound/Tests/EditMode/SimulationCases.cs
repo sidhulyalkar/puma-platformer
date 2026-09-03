@@ -12,6 +12,7 @@ namespace Wildbound.Tests
             foreach (var pair in MoontrailCases.All) All.Add(pair.Key, pair.Value);
             foreach (var pair in ExplorationCases.All) All.Add(pair.Key, pair.Value);
             foreach (var pair in PracticeCases.All) All.Add(pair.Key, pair.Value);
+            foreach (var pair in JourneyFlowCases.All) All.Add(pair.Key, pair.Value);
         }
         public static readonly Dictionary<string, Action> All = new Dictionary<string, Action>
         {

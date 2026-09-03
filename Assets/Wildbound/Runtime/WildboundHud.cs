@@ -30,17 +30,17 @@ namespace Wildbound.Unity
             float scale = Mathf.Min(Screen.width / 1280f, Screen.height / 720f);
             Matrix4x4 previous = GUI.matrix;
             GUI.matrix = Matrix4x4.TRS(new Vector3((Screen.width - 1280 * scale) / 2, (Screen.height - 720 * scale) / 2, 0), Quaternion.identity, Vector3.one * scale);
-            if (!game.Playing) Title();
+            if (game.ShowResetConfirmation) ResetConfirmation();
+            else if (game.ShowControls) { if (game.Playing) HUD(); Controls(); }
+            else if (!game.Playing) Title();
             else if (game.ShowEnding) Ending();
             else
             {
                 HUD();
                 if (game.ShowMap) Map();
-                else if (game.ShowControls) Controls();
                 else if (game.Session.Paused) Pause();
             }
-            if (!game.Playing && game.ShowControls) Controls();
-            if (game.ToastTime > 0 && !game.ShowControls && !game.ShowMap)
+            if (game.ToastTime > 0 && !game.ShowControls && !game.ShowMap && !game.ShowResetConfirmation)
             {
                 Panel(325, 94, 565, 76, ink); Label(345, 109, 525, 57, game.Toast, new GUIStyle(text) { fontSize = 17 });
             }
@@ -54,7 +54,7 @@ namespace Wildbound.Unity
             Label(65, 267, 430, 80, "Quiet paws.\nA wild heart after dark.", new GUIStyle(text) { fontSize = 29 });
             Label(65, 370, 405, 80, "Follow scents through three night worlds. Discover quiet hollows, high roosts, and paths that remember your paws.", text);
             if (Button(65, 488, 280, 54, game.Session.Save.Biome > 0 || game.Session.Save.Collected[0] != 0 || game.Session.WaystoneCount > 0 || game.Session.DiscoveryCount > 0 ? "Continue your trail  /  ENTER" : "Begin exploring  /  ENTER")) game.Begin();
-            if (Button(65, 557, 190, 43, "Field guide  /  C")) game.ShowControls = true;
+            if (Button(65, 557, 190, 43, "Field guide  /  C")) game.ToggleControls();
             Label(65, 656, 465, 26, "A SID HULYALKAR GAME   /   DEVELOPMENT SLICE", eyebrow);
         }
         private void HUD()
@@ -133,7 +133,7 @@ namespace Wildbound.Unity
                 }
                 Label(277, 544, 728, 48, "A crescent stone near each region's start leads to a trial. Restore its waystone to keep that region's light bridges awake. Trial strategy explains the combinations.", eyebrow);
             }
-            if (Button(277, 606, 205, 40, "Back  /  C")) { game.ShowControls = false; if (game.Playing) game.Resume(); }
+            if (Button(277, 606, 205, 40, "Back  /  C")) game.ToggleControls();
             if (Button(500, 606, 205, 40, game.Muted ? "Sound: off" : "Sound: on")) game.ToggleMute();
             if (Button(723, 606, 280, 40, game.ReducedMotion ? "Motion: reduced" : "Motion: full")) game.ToggleMotion();
         }
@@ -142,7 +142,7 @@ namespace Wildbound.Unity
             Panel(400, 157, 480, 417, ink);
             Label(442, 196, 400, 50, "A MOMENT TO BREATHE", new GUIStyle(title) { fontSize = 29 });
             if (Button(444, 273, 392, 48, "Keep exploring")) game.Resume();
-            if (Button(444, 335, 392, 48, "Field guide")) game.ShowControls = true;
+            if (Button(444, 335, 392, 48, "Field guide")) game.ToggleControls();
             if (Button(444, 397, 392, 48, "New journey")) game.NewJourney();
             if (Button(444, 460, 185, 42, game.Muted ? "Sound: off" : "Sound: on")) game.ToggleMute();
             if (Button(642, 460, 194, 42, game.ReducedMotion ? "Less motion" : "Full motion")) game.ToggleMotion();
@@ -183,7 +183,7 @@ namespace Wildbound.Unity
             }
             else for (int i = 0; i <= game.Session.Save.FurthestBiome; i++)
                     if (Button(470 + i * 195, 569, 180, 37, names[i])) game.TravelTo(i);
-            if (Button(196, 569, 250, 37, "Back to the trail  /  TAB")) game.Resume();
+            if (Button(196, 569, 250, 37, "Back  /  TAB")) game.ToggleMap();
         }
         private float MapScale { get { Box b = game.Session.World.MapBounds; return Mathf.Min(860 / b.W, 268 / b.H); } }
         private Vector2 OnMap(V2 position)
@@ -214,6 +214,14 @@ namespace Wildbound.Unity
             if (Button(340, 471, 280, 49, "Keep exploring")) game.Resume();
             if (Button(640, 471, 296, 49, "Start a new journey")) game.NewJourney();
             Label(340, 552, 600, 24, "Thank you for taking the scenic route.", eyebrow);
+        }
+        private void ResetConfirmation()
+        {
+            Panel(287, 180, 706, 354, ink);
+            Label(333, 218, 615, 49, "START A NEW JOURNEY?", new GUIStyle(title) { fontSize = 34 });
+            Label(333, 283, 615, 105, "This replaces your saved trail on this device. You will return to the Canopy with no collected light, memories, wild places, waystones, or practice notes.", text);
+            if (Button(333, 429, 295, 52, "Keep my trail  /  ESC")) game.TogglePause();
+            if (Button(652, 429, 295, 52, "Start fresh")) game.ConfirmNewJourney();
         }
         private void CreatureHint()
         {

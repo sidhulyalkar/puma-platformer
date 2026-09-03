@@ -7,17 +7,23 @@ namespace Wildbound.Unity
 {
     public sealed class WildboundGame : MonoBehaviour
     {
-        public GameSession Session { get; private set; }
-        public bool Playing { get; private set; }
-        public bool ShowControls, ShowMap, ReducedMotion, Muted, ShowEnding;
+        public JourneyFlow Flow { get; private set; }
+        public GameSession Session { get { return Flow.Session; } }
+        public bool Playing { get { return Flow.Started; } }
+        public bool ShowControls { get { return Flow.Screen == JourneyScreen.Controls; } }
+        public bool ShowMap { get { return Flow.Screen == JourneyScreen.Map; } }
+        public bool ShowEnding { get { return Flow.Screen == JourneyScreen.Ending; } }
+        public bool ShowResetConfirmation { get { return Flow.Screen == JourneyScreen.ConfirmNewJourney; } }
+        public bool ReducedMotion, Muted;
         public string Toast = "";
         public float ToastTime;
         private const string SaveKey = "wildbound.journey.v1";
         private PlayerInput pending;
         private WorldView view;
         private WildboundAudio sound;
-        private bool dirty, resetConfirm;
+        private bool dirty;
         private float saveDelay;
+        private int inputSuppressedFrame = -1;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Boot()
@@ -33,7 +39,7 @@ namespace Wildbound.Unity
             JourneySave save = null;
             try { string json = PlayerPrefs.GetString(SaveKey, ""); if (json.Length > 0) save = JsonUtility.FromJson<JourneySave>(json); }
             catch (Exception) { Toast = "Your old trail could not be read. A fresh journey is ready."; ToastTime = 8; }
-            Session = new GameSession(save); Session.SetPaused(true);
+            Flow = new JourneyFlow(save);
             view = gameObject.AddComponent<WorldView>(); view.Initialize(this);
             sound = gameObject.AddComponent<WildboundAudio>(); sound.Initialize(this);
             gameObject.AddComponent<WildboundHud>().Initialize(this);
@@ -42,14 +48,14 @@ namespace Wildbound.Unity
         {
             var k = Keyboard.current; var pad = Gamepad.current;
             bool pause = (k != null && k.escapeKey.wasPressedThisFrame) || (pad != null && pad.startButton.wasPressedThisFrame);
-            if (pause && Playing) { ShowControls = ShowMap = false; TogglePause(); }
             if (!Playing && ((k != null && k.enterKey.wasPressedThisFrame) || (pad != null && pad.startButton.wasPressedThisFrame))) Begin();
-            if (k != null && k.cKey.wasPressedThisFrame) { ShowControls = !ShowControls; if (Playing) PauseForOverlay(); }
-            if (k != null && k.tabKey.wasPressedThisFrame && Playing) { ShowMap = !ShowMap; PauseForOverlay(); }
+            else if (pause) TogglePause();
+            else if (k != null && k.cKey.wasPressedThisFrame) ToggleControls();
+            else if (k != null && k.tabKey.wasPressedThisFrame) ToggleMap();
             if (k != null && k.mKey.wasPressedThisFrame) ToggleMute();
             ToastTime = Mathf.Max(0, ToastTime - Time.unscaledDeltaTime);
             if (dirty && (saveDelay -= Time.unscaledDeltaTime) <= 0) FlushSave();
-            if (!Playing || Session.Paused || ShowEnding) { pending = new PlayerInput(); return; }
+            if (Flow.Screen != JourneyScreen.Playing || Time.frameCount == inputSuppressedFrame) { pending = new PlayerInput(); return; }
             if (k != null && k.rKey.wasPressedThisFrame) { Session.Respawn(); pending = new PlayerInput(); view.SnapCamera(); return; }
             float move = k == null ? 0 : ((k.dKey.isPressed || k.rightArrowKey.isPressed ? 1 : 0) - (k.aKey.isPressed || k.leftArrowKey.isPressed ? 1 : 0));
             float aim = k == null ? 0 : ((k.wKey.isPressed || k.upArrowKey.isPressed ? 1 : 0) - (k.sKey.isPressed || k.downArrowKey.isPressed ? 1 : 0));
@@ -69,10 +75,9 @@ namespace Wildbound.Unity
         }
         private void FixedUpdate()
         {
-            if (!Playing || Session.Paused || ShowEnding) return;
+            if (Flow.Screen != JourneyScreen.Playing || Time.frameCount == inputSuppressedFrame) return;
             var world = Session.World;
-            bool completedBefore = Session.Save.Completed;
-            Session.Step(pending);
+            Flow.Step(pending);
             pending.JumpPressed = pending.PouncePressed = pending.PounceReleased = pending.InteractPressed = false;
             pending.AttackPressed = pending.DashPressed = pending.RollPressed = false;
             GameEvent e = Session.Events;
@@ -91,32 +96,42 @@ namespace Wildbound.Unity
             if ((e & GameEvent.ObjectiveBlocked) != 0 && Session.InTrial) Announce(Session.World.Trial.NextGoal(Session.World), 5);
             if ((e & GameEvent.Waystone) != 0) Announce("Waystone restored. This region's light bridges now stay awake.", 7);
             if ((e & (GameEvent.Collect | GameEvent.Secret | GameEvent.Checkpoint | GameEvent.Portal | GameEvent.Waystone | GameEvent.Discovery | GameEvent.Practice)) != 0) MarkSave();
-            if (!completedBefore && Session.Save.Completed) { ShowEnding = true; Session.SetPaused(true); }
+            if (Flow.Screen != JourneyScreen.Playing) ApplyNavigation(true);
             sound.React(e); view.React(e);
         }
         public void Begin()
         {
-            Playing = true; ShowControls = ShowMap = ShowEnding = false; resetConfirm = false;
-            Session.SetPaused(false); pending = new PlayerInput(); sound.Wake(); view.SnapCamera();
+            if (!ApplyNavigation(Flow.Begin())) return;
+            sound.Wake(); view.SnapCamera();
             Announce(Session.World.Subtitle);
         }
-        public void TogglePause() { Session.SetPaused(!Session.Paused); pending = new PlayerInput(); }
+        private bool ApplyNavigation(bool changed)
+        {
+            if (!changed) return false;
+            pending = new PlayerInput(); inputSuppressedFrame = Time.frameCount; return true;
+        }
+        public void TogglePause() { ApplyNavigation(Flow.Back()); }
+        public void ToggleControls() { ApplyNavigation(Flow.ToggleControls()); }
+        public void ToggleMap() { ApplyNavigation(Flow.ToggleMap()); }
         public void TravelTo(int biome)
         {
-            if (!Session.TravelTo(biome)) return;
-            view.Rebuild(); Resume(); MarkSave(); Announce(Session.World.Subtitle);
+            if (!ApplyNavigation(Flow.TravelTo(biome))) return;
+            view.Rebuild(); MarkSave(); Announce(Session.World.Subtitle);
         }
-        public void Resume() { ShowMap = ShowControls = ShowEnding = false; Session.SetPaused(false); pending = new PlayerInput(); }
+        public void Resume() { ApplyNavigation(Flow.Resume()); }
         public void LeaveTrial()
         {
-            if (!Session.LeaveTrial()) return;
-            view.Rebuild(); Resume(); Announce("Back on your trail. You can try the waystone again.");
+            if (!ApplyNavigation(Flow.LeaveTrial())) return;
+            view.Rebuild(); Announce("Back on your trail. You can try the waystone again.");
         }
-        private void PauseForOverlay() { Session.SetPaused(ShowMap || ShowControls); pending = new PlayerInput(); }
         public void NewJourney()
         {
-            if (!resetConfirm) { resetConfirm = true; Announce("Start fresh? Click New Journey again to replace your saved trail.", 6); return; }
-            Session = new GameSession(); view.Rebuild(); Begin(); MarkSave();
+            if (ApplyNavigation(Flow.RequestNewJourney())) ToastTime = 0;
+        }
+        public void ConfirmNewJourney()
+        {
+            if (!ApplyNavigation(Flow.ConfirmNewJourney())) return;
+            view.Rebuild(); sound.Wake(); view.SnapCamera(); MarkSave(); Announce(Session.World.Subtitle);
         }
         public void ToggleMute() { Muted = !Muted; PlayerPrefs.SetInt("wildbound.muted", Muted ? 1 : 0); PlayerPrefs.Save(); }
         public void ToggleMotion() { ReducedMotion = !ReducedMotion; PlayerPrefs.SetInt("wildbound.reducedMotion", ReducedMotion ? 1 : 0); PlayerPrefs.Save(); }
@@ -130,7 +145,7 @@ namespace Wildbound.Unity
         public void Announce(string text, float seconds = 4) { Toast = text; ToastTime = seconds; }
         private void OnApplicationFocus(bool focus)
         {
-            if (!focus && Session != null) { Session.SetPaused(true); pending = new PlayerInput(); FlushSave(); }
+            if (!focus && Flow != null) { Flow.LoseFocus(); ApplyNavigation(true); FlushSave(); }
         }
         private void OnApplicationPause(bool pause) { if (pause) OnApplicationFocus(false); }
         private void OnApplicationQuit() { FlushSave(); }

@@ -10,6 +10,8 @@ The first few minutes should explain what the puma can do while leaving the choi
 - The outside objective points toward the arch. The map marks the main arch with a larger violet square and the optional trial entrance with a smaller one. Near the crescent, the card explains E / Y trial entry. Inside a trial, guidance still follows its next mechanism.
 - Notes survive falls, region changes, trial visits, and saved-session reconstruction. The short confirmation notice does not replay on loading. New Journey clears notes along with the rest of that journey.
 
+Menus now use a single screen state. Opening the guide from Pause and closing it keeps the game paused; swapping between map and guide preserves that origin. Escape/Start also leaves the ending cleanly. New Journey opens a separate dialog with **Keep my trail** and **Start fresh**. Canceling or switching away from the app clears that confirmation, including before a later menu visit.
+
 ## Recognition rules
 
 | Note | What records it |
@@ -37,5 +39,7 @@ Use Unity 6000.3.22f1 at 1280 × 720. Preserve a copy of any existing journey yo
 5. Open **C → Practice notes**. Inspect all nine rows and the footer for wrapping at 1280 × 720 and in a resized window. Cycle to trial strategy and back to controls. Confirm overlays pause play and retain practice progress.
 6. Fall, return through the map, enter/leave a trial, and reload the project. Notes should persist, while notices should not replay and outside collectibles/waystones should remain intact.
 7. Follow the objective through an arch without completing any trial. Enter a trial separately and confirm its mechanism guidance still advances. Check both map marker sizes are understandable without coaching.
+8. From Pause, open New Journey, cancel, resume, and open New Journey again. The second visit must still show a dialog and retain your progress. Repeat with focus loss while the dialog is open. Only select Start fresh when you intend to replace that journey.
+9. Open the guide from the title and verify no title button activates behind it. Open it from Pause, switch to the map, then close it: the game must remain paused. Repeat while playing, with a focus change before closing, and from the ending screen. Verify no menu click also starts a claw.
 
 Record hesitation, missed targets, confusing direction changes, and obscured landings. The regression route is not evidence of enjoyment, readable UI, or controller usability. Complete the broader [Unity and browser qualification](VALIDATION.md) before publishing an arcade build.

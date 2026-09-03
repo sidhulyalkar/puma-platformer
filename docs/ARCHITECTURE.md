@@ -22,6 +22,16 @@ Moving platforms move horizontally and carry grounded players through the same h
 
 `GameEvent` is a per-step bitmask. The Unity host handles it immediately in `FixedUpdate`, so render frames cannot swallow multiple physics-step events. Input edges are latched in `Update` and consumed once per fixed tick; held states persist. Pausing clears queued input and cancels pounce charge while freezing the current attack/enemy phase. Focus loss pauses the session. Missing/disconnected input devices clear held movement while save/toast timers continue.
 
+## Screen and session ownership
+
+`JourneyFlow` owns the current `GameSession` and one `JourneyScreen`: title, playing, pause, controls, map, ending, or new-journey confirmation. Every screen transition changes the session's pause state at the same time. The Unity host derives its display flags from this screen, routes keyboard and mouse menu commands through the same methods, and suppresses gameplay input for the frame that changed screens. A guide replaces the title's interactive buttons instead of drawing over still-active buttons.
+
+Controls and map share a remembered origin when switching between them. Closing an overlay opened during play resumes play; one opened from Pause or Ending returns there. Losing focus while an overlay is open changes a playing origin to Pause, so closing it after returning to the app cannot unexpectedly resume the simulation. Escape/Start leaves the ending through the same resume transition as its button.
+
+`RequestNewJourney` opens an explicit dialog only from Pause or Ending. `ConfirmNewJourney` replaces the session only while that dialog is visible. Cancel, resume, and focus loss invalidate the confirmation. Repeating the initial request never replaces the session, and a second confirm after replacement is ignored. Only the successful reset marks the new save dirty in the host; canceled dialogs retain the original session and progress.
+
+`JourneyFlow.Step` advances only the playing screen and opens the ending on the first completion event. Map travel and leaving a trial update the session through the same controller, then resume. The headless suite exercises this production controller, including 5,000 seeded navigation transitions; separate Unity PlayMode coverage checks the host's public menu wiring when run in the editor.
+
 ## First Paws guidance
 
 `PracticeGuide` observes completed simulation ticks, after collision, combat, and progression. Explicit movement events record launched jumps, pounces, rolls, dashes, springs, and wall kicks. `ClawHit` is emitted only by a connected ordinary claw/rake against an enemy, bloom, or bell; body hits, armor blocks, misses, and dash-claws cannot grant that note. Scent requires grounded stalking with a currently visible undiscovered trail. Paused and recovery ticks never observe input. A new note emits `GameEvent.Practice`, which uses the existing debounced save path.
