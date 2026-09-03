@@ -4,6 +4,12 @@ namespace Wildbound.Core
 {
     public static class WorldCollision
     {
+        /// <summary>Max axis travel per discrete motion sub-step. Must stay below MinSolidThickness.</summary>
+        public const float MaxSubstep = .12f;
+
+        /// <summary>Minimum extent of an enabled solid platform. Thinner solids can be tunneled under discrete sub-steps.</summary>
+        public const float MinSolidThickness = .13f;
+
         public static bool OverlapsSolid(WorldDefinition world, Box box)
         {
             foreach (var p in world.Platforms) if (p.Enabled && box.Overlaps(p.Bounds)) return true;
@@ -55,13 +61,67 @@ namespace Wildbound.Core
             return near <= far;
         }
 
+        /// <summary>
+        /// Continuous moving-AABB vs static-AABB test (linear motion only).
+        /// Inflates the obstacle by the mover size and segment-casts the mover center.
+        /// Returns true when a hit occurs with toi in [0, 1]. axisHint: 0 = horizontal dominant, 1 = vertical.
+        /// </summary>
+        public static bool SweepAABB(Box mover, V2 delta, Box obstacle, out float toi, out int axisHint)
+        {
+            toi = float.PositiveInfinity;
+            axisHint = 0;
+            if (Math.Abs(delta.X) < 1e-8f && Math.Abs(delta.Y) < 1e-8f) return false;
+
+            // Minkowski: expand obstacle by mover half-extents on each side.
+            var inflated = new Box(
+                obstacle.X - mover.W / 2,
+                obstacle.Y - mover.H / 2,
+                obstacle.W + mover.W,
+                obstacle.H + mover.H);
+
+            V2 start = mover.Center;
+            V2 end = start + delta;
+            float fraction;
+            if (!SegmentHitFraction(start, end, inflated, out fraction)) return false;
+            if (fraction < 0 || fraction > 1) return false;
+
+            toi = fraction;
+            // Dominant axis from remaining free travel direction at contact.
+            float ix = Math.Abs(delta.X) * (1 - fraction);
+            float iy = Math.Abs(delta.Y) * (1 - fraction);
+            axisHint = iy > ix ? 1 : 0;
+            return true;
+        }
+
+        /// <summary>Earliest sweep hit against enabled platforms. Returns false if path is clear.</summary>
+        public static bool SweepWorld(WorldDefinition world, Box mover, V2 delta, out float toi, out int platformIndex, out int axisHint)
+        {
+            toi = float.PositiveInfinity;
+            platformIndex = -1;
+            axisHint = 0;
+            bool any = false;
+            for (int i = 0; i < world.Platforms.Count; i++)
+            {
+                if (!world.Platforms[i].Enabled) continue;
+                float t; int axis;
+                if (!SweepAABB(mover, delta, world.Platforms[i].Bounds, out t, out axis)) continue;
+                if (t < toi)
+                {
+                    toi = t;
+                    platformIndex = i;
+                    axisHint = axis;
+                    any = true;
+                }
+            }
+            return any;
+        }
+
         public static bool GroundBelow(WorldDefinition world, float x, float feet)
         { return OverlapsSolid(world, new Box(x - .1f, feet - .15f, .2f, .16f)); }
 
         /// <summary>
         /// Detect a ledge the puma can mantle onto.
         /// A valid ledge is a solid platform top near the upper body with clear standing space above it.
-        /// Returns true and the target feet Y if a suitable ledge is found in the facing direction.
         /// </summary>
         public static bool TryFindLedge(WorldDefinition world, PumaMotor puma, out float targetFeetY, out int platformIndex)
         {
@@ -80,7 +140,6 @@ namespace Wildbound.Core
                 if (!p.Enabled) continue;
                 var b = p.Bounds;
 
-                // Lip must be near chest height and in front of the puma.
                 float lipY = b.Top;
                 if (Math.Abs(lipY - chestY) > reachY) continue;
 
@@ -89,12 +148,9 @@ namespace Wildbound.Core
                     : (b.Right < puma.Position.X + .2f && b.Right > puma.Position.X - WidthReach(puma) - reachX);
                 if (!inFront) continue;
 
-                // Standing space on top of the ledge must be clear for full height.
                 float standX = face > 0 ? b.X + .35f : b.Right - .35f;
                 var standBox = new Box(standX - PumaMotor.Width / 2, lipY, PumaMotor.Width, PumaMotor.Height);
                 if (OverlapsSolid(world, standBox)) continue;
-
-                // Must not be already overlapping the platform body.
                 if (puma.Bounds.Overlaps(b)) continue;
 
                 targetFeetY = lipY;
@@ -109,7 +165,7 @@ namespace Wildbound.Core
         public static bool MoveEnemy(WorldDefinition world, Enemy e, V2 delta)
         {
             bool blocked = false;
-            int steps = Math.Max(1, (int)Math.Ceiling(Math.Max(Math.Abs(delta.X), Math.Abs(delta.Y)) / .12f));
+            int steps = Math.Max(1, (int)Math.Ceiling(Math.Max(Math.Abs(delta.X), Math.Abs(delta.Y)) / MaxSubstep));
             for (int s = 0; s < steps; s++)
             {
                 float dx = delta.X / steps, dy = delta.Y / steps;
