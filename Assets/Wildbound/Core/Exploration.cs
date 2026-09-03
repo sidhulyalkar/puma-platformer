@@ -1,63 +1,55 @@
 using System;
+using System.Collections.Generic;
 
 namespace Wildbound.Core
 {
     // Persistent IDs: never renumber these when reordering or moving places.
-    public enum WildPlaceId { RootHollow = 0, AmberOverlook = 1, StillwaterShelf = 2, LanternRoost = 3, CloudNest = 4, StarflowerCrown = 5 }
+    public enum WildPlaceId { RootHollow = 0, AmberOverlook = 1, StillwaterShelf = 2, LanternRoost = 3, CloudNest = 4, StarflowerCrown = 5, CharcoilDen = 6, QuietFireRidge = 7 }
 
-    /// <summary>
-    /// A discoverable wild place. Stories and MemoryTitle feed the vignette system (docs/STORY.md).
-    /// </summary>
     public sealed class WildPlace
     {
         public readonly WildPlaceId Id;
-        public readonly string Name, Story, Hint;
+        public readonly string Name, Story, Hint, MemoryTitle;
         public readonly V2 Position;
         public readonly V2[] Tracks;
         public bool Found;
+
         public int Mask { get { return 1 << (int)Id; } }
-        public readonly string MemoryTitle;
 
         public WildPlace(WildPlaceId id, string name, string story, string hint, V2 position, params V2[] tracks)
-            : this(id, name, story, hint, "", position, tracks) { }
+            : this(id, name, story, hint, name, position, tracks) { }
 
         public WildPlace(WildPlaceId id, string name, string story, string hint, string memoryTitle, V2 position, params V2[] tracks)
         {
-            Id = id;
-            Name = name;
-            Story = story;
-            Hint = hint;
-            MemoryTitle = memoryTitle ?? "";
-            Position = position;
-            Tracks = tracks ?? Array.Empty<V2>();
+            Id = id; Name = name; Story = story; Hint = hint; MemoryTitle = memoryTitle ?? name;
+            Position = position; Tracks = tracks ?? new V2[0];
         }
 
-        public bool Reached(PumaMotor puma)
+        public bool Reached(PumaMotor player)
         {
-            return puma.Grounded
-                && Math.Abs(puma.Position.X - Position.X) < 1.1f
-                && Math.Abs(puma.Position.Y - Position.Y) < .25f;
-        }
-
-        public static bool ScentVisible(WorldDefinition world, PumaMotor puma, V2 track)
-        {
-            return puma.Stalking
-                && (track - puma.Position).Length < 8
-                && WorldCollision.ClearLine(world, puma.Bounds.Center, track + new V2(0, .18f));
+            if (Found) return false;
+            if ((player.Position - Position).Length > 1.4f) return false;
+            if (Id == WildPlaceId.RootHollow && !player.LowProfile) return false;
+            return true;
         }
 
         public void OpenPath(WorldDefinition world)
         {
             Found = true;
-            foreach (var platform in world.Platforms)
-                if (platform.DiscoverySource == (int)Id) platform.Enabled = true;
+            foreach (var p in world.Platforms)
+                if (p.DiscoverySource == (int)Id) p.Enabled = true;
+        }
+
+        public static bool ScentVisible(WorldDefinition world, PumaMotor puma, V2 track)
+        {
+            return puma.Stalking
+                && (track - puma.Position).Length < 7.5f
+                && WorldCollision.ClearLine(world, puma.Bounds.Center, track + new V2(0, .2f));
         }
 
         public MemoryVignette ToVignette(int biome)
         {
-            string title = !string.IsNullOrEmpty(MemoryTitle) ? MemoryTitle : Name;
-            string beat = biome == 0 ? "Belonging / loss" : biome == 1 ? "Responsibility" : "Acceptance / agency";
-            return new MemoryVignette(title, Story, beat, biome);
+            return new MemoryVignette(MemoryTitle, Story, Hint, biome);
         }
     }
 
@@ -78,7 +70,8 @@ namespace Wildbound.Core
         {
             new MemoryDescriptor(0, "First Pawprints", "Belonging / loss"),
             new MemoryDescriptor(1, "The Keeper's Lantern", "Responsibility"),
-            new MemoryDescriptor(2, "Starflower Crown", "Acceptance / agency")
+            new MemoryDescriptor(2, "Starflower Crown", "Acceptance / agency"),
+            new MemoryDescriptor(3, "Quiet Fire", "Endurance / warmth")
         };
 
         public static MemoryDescriptor ForBiome(int biome)
