@@ -11,6 +11,7 @@ namespace Wildbound.Tests
             foreach (var pair in CombatCases.All) All.Add(pair.Key, pair.Value);
             foreach (var pair in MoontrailCases.All) All.Add(pair.Key, pair.Value);
             foreach (var pair in ExplorationCases.All) All.Add(pair.Key, pair.Value);
+            foreach (var pair in NaturalSystemsCases.All) All.Add(pair.Key, pair.Value);
         }
         public static readonly Dictionary<string, Action> All = new Dictionary<string, Action>
         {
@@ -43,7 +44,14 @@ namespace Wildbound.Tests
             { "Invalid timesteps and input are rejected", InvalidInput },
             { "Identical input replays produce identical state", Replay },
             { "Movement-only traversal reaches every world exit", TraverseWorlds },
-            { "Seeded long play remains finite and inside world bounds", LongPlay }
+            { "Seeded long play remains finite and inside world bounds", LongPlay },
+            { "Rising into a clear ledge triggers mantle", MantleOntoLedge },
+            { "Authored platforms respect minimum solid thickness", PlatformThicknessInvariant },
+            { "Peak speeds still subdivide under MaxSubstep", SpeedSubstepBudget },
+            { "SweepAABB reports TOI before tunneling a thin wall", SweepDetectsThinWall },
+            { "Full pounce grants a limited tail-glide", FullPounceGrantsGlide },
+            { "Tail-glide budget expires", GlideBudgetExpires },
+            { "Air control after wall kick improves steering", AirControlAfterWallKick }
         };
         private static void Check(bool value, string message) { if (!value) throw new Exception(message); }
         private static bool Near(float a, float b, float epsilon = .02f) { return Math.Abs(a - b) < epsilon; }
@@ -141,7 +149,7 @@ namespace Wildbound.Tests
         private static void CheckpointRecovery()
         {
             var g = new GameSession(); g.Player.Reset(new V2(23, 1)); Tick(g, 2); Check(g.Save.Checkpoints[0] == 0, "Checkpoint not recorded");
-            g.World.Hazards.Add(new Box(30, 1, 2, .45f)); // Isolate recovery from the introductory region layout.
+            g.World.Hazards.Add(new Box(30, 1, 2, .45f));
             g.Save.Collected[0] = 2; g.Player.Reset(new V2(30.5f, 1)); g.Step(new PlayerInput());
             Check(g.Deaths == 1 && Near(g.Player.Position.X, 23) && g.Save.Collected[0] == 2, "Recovery lost position or discoveries");
         }
@@ -216,7 +224,6 @@ namespace Wildbound.Tests
         }
         private static void TraverseWorlds()
         {
-            // No position edits, portal shortcuts, or collision bypasses in this route.
             string failures = "";
             for (int biome = 0; biome < 3; biome++)
             {
@@ -247,6 +254,108 @@ namespace Wildbound.Tests
                     Check(g.Player.Position.X > -6 && g.Player.Position.X < 82 && g.Player.Position.Y > -8.1f, "Escaped world bounds");
                 }
             }
+        }
+        private static void MantleOntoLedge()
+        {
+            var g = Flat();
+            g.World.Add(2, 0, 4, 2.2f);
+            g.Player.Reset(new V2(1.4f, 1.1f));
+            g.Player.Facing = 1;
+            g.Player.Velocity = new V2(3, 6);
+            bool mantled = false;
+            for (int i = 0; i < 90; i++)
+            {
+                g.Step(new PlayerInput { Move = 1 });
+                if ((g.Events & GameEvent.Mantle) != 0) mantled = true;
+                if (g.Player.Grounded && g.Player.Position.Y >= 2.1f) break;
+            }
+            Check(mantled, "Mantle event never fired");
+            Check(g.Player.Position.Y >= 2.0f, "Did not finish above the ledge lip");
+        }
+        private static void PlatformThicknessInvariant()
+        {
+            Check(WorldCollision.MaxSubstep < WorldCollision.MinSolidThickness, "MaxSubstep must stay below MinSolidThickness");
+            for (int biome = 0; biome < 3; biome++)
+            {
+                var g = new GameSession(new JourneySave { Biome = biome });
+                foreach (var p in g.World.Platforms)
+                {
+                    if (!p.Enabled) continue;
+                    float thin = Math.Min(p.Bounds.W, p.Bounds.H);
+                    Check(thin + 1e-4f >= WorldCollision.MinSolidThickness,
+                        "Thin platform in biome " + biome + " size " + p.Bounds.W + "x" + p.Bounds.H);
+                }
+            }
+        }
+        private static void SpeedSubstepBudget()
+        {
+            var tuning = new MovementTuning();
+            float peak = Math.Max(tuning.PounceMaxSpeed, Math.Max(tuning.DashSpeed, tuning.MaxFall));
+            float perTick = peak * GameSession.StepSeconds;
+            int steps = Math.Max(1, (int)Math.Ceiling(perTick / WorldCollision.MaxSubstep));
+            Check(perTick / steps <= WorldCollision.MaxSubstep + 1e-5f, "Peak speed exceeds sub-step budget");
+            Check(steps >= 1, "Sub-step count collapsed");
+        }
+        private static void SweepDetectsThinWall()
+        {
+            var mover = new Box(0, 0, .9f, 1.05f);
+            var wall = new Box(2, -1, .08f, 4);
+            float toi; int axis;
+            bool hit = WorldCollision.SweepAABB(mover, new V2(5, 0), wall, out toi, out axis);
+            Check(hit, "Sweep missed thin wall");
+            Check(toi > 0 && toi < 1, "TOI not in open unit interval");
+            Check(axis == 0, "Expected horizontal dominant axis");
+            Check(!WorldCollision.SweepAABB(mover, new V2(0, 3), wall, out toi, out axis), "False positive on clear vertical path");
+        }
+        private static void FullPounceGrantsGlide()
+        {
+            var with = Flat();
+            Charge(with, 90, 1);
+            Tick(with, 8);
+            bool glided = false;
+            float minVy = 0;
+            for (int i = 0; i < 40; i++)
+            {
+                with.Step(new PlayerInput { JumpHeld = true });
+                if ((with.Events & GameEvent.Glide) != 0) glided = true;
+                if (with.Player.Gliding) minVy = Math.Min(minVy, with.Player.Velocity.Y);
+            }
+            Check(with.Player.GlideBudget >= 0, "Glide budget missing after full pounce");
+            Check(glided || with.Player.Gliding, "Tail-glide never engaged while holding jump");
+            var without = Flat();
+            Charge(without, 90, 1);
+            Tick(without, 8);
+            float fallWithout = 0;
+            for (int i = 0; i < 40; i++)
+            {
+                without.Step(new PlayerInput());
+                fallWithout = Math.Min(fallWithout, without.Player.Velocity.Y);
+            }
+            Check(minVy > fallWithout + 1f || with.Player.Position.Y > without.Player.Position.Y + .3f,
+                "Glide did not meaningfully soften descent vs no hold");
+        }
+        private static void GlideBudgetExpires()
+        {
+            var g = Flat();
+            Charge(g, 90, 1);
+            Tick(g, 5);
+            for (int i = 0; i < 200; i++) g.Step(new PlayerInput { JumpHeld = true });
+            Check(g.Player.GlideBudget <= 0.001f, "Glide budget never expired");
+            Check(!g.Player.Gliding, "Still gliding after budget exhausted");
+        }
+        private static void AirControlAfterWallKick()
+        {
+            var boosted = Flat();
+            boosted.World.Add(1, 0, .3f, 10, Surface.Stone);
+            boosted.Player.Reset(new V2(.55f, 4));
+            Tick(boosted, 2, new PlayerInput { Move = 1 });
+            boosted.Step(new PlayerInput { Move = 1, JumpPressed = true, JumpHeld = true });
+            Check((boosted.Events & GameEvent.WallKick) != 0 || boosted.Player.AirControlTime > 0, "Wall kick missing air-control grant");
+            float startX = boosted.Player.Position.X;
+            Tick(boosted, 25, new PlayerInput { Move = 1 });
+            float steered = Math.Abs(boosted.Player.Position.X - startX);
+            Check(steered > .4f, "Air-control window did not allow meaningful post-kick travel");
+            Check(boosted.Player.AirControlTime >= 0, "Air control timer invalid");
         }
     }
 }
