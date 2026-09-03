@@ -44,7 +44,10 @@ namespace Wildbound.Tests
             { "Identical input replays produce identical state", Replay },
             { "Movement-only traversal reaches every world exit", TraverseWorlds },
             { "Seeded long play remains finite and inside world bounds", LongPlay },
-            { "Rising into a clear ledge triggers mantle", MantleOntoLedge }
+            { "Rising into a clear ledge triggers mantle", MantleOntoLedge },
+            { "Authored platforms respect minimum solid thickness", PlatformThicknessInvariant },
+            { "Peak speeds still subdivide under MaxSubstep", SpeedSubstepBudget },
+            { "SweepAABB reports TOI before tunneling a thin wall", SweepDetectsThinWall }
         };
         private static void Check(bool value, string message) { if (!value) throw new Exception(message); }
         private static bool Near(float a, float b, float epsilon = .02f) { return Math.Abs(a - b) < epsilon; }
@@ -142,7 +145,7 @@ namespace Wildbound.Tests
         private static void CheckpointRecovery()
         {
             var g = new GameSession(); g.Player.Reset(new V2(23, 1)); Tick(g, 2); Check(g.Save.Checkpoints[0] == 0, "Checkpoint not recorded");
-            g.World.Hazards.Add(new Box(30, 1, 2, .45f)); // Isolate recovery from the introductory region layout.
+            g.World.Hazards.Add(new Box(30, 1, 2, .45f));
             g.Save.Collected[0] = 2; g.Player.Reset(new V2(30.5f, 1)); g.Step(new PlayerInput());
             Check(g.Deaths == 1 && Near(g.Player.Position.X, 23) && g.Save.Collected[0] == 2, "Recovery lost position or discoveries");
         }
@@ -217,7 +220,6 @@ namespace Wildbound.Tests
         }
         private static void TraverseWorlds()
         {
-            // No position edits, portal shortcuts, or collision bypasses in this route.
             string failures = "";
             for (int biome = 0; biome < 3; biome++)
             {
@@ -252,11 +254,10 @@ namespace Wildbound.Tests
         private static void MantleOntoLedge()
         {
             var g = Flat();
-            // Ground at y=0, a ledge platform starting at x=2 with top at y=2.2
             g.World.Add(2, 0, 4, 2.2f);
             g.Player.Reset(new V2(1.4f, 1.1f));
             g.Player.Facing = 1;
-            g.Player.Velocity = new V2(3, 6); // rising toward the lip
+            g.Player.Velocity = new V2(3, 6);
             bool mantled = false;
             for (int i = 0; i < 90; i++)
             {
@@ -266,6 +267,46 @@ namespace Wildbound.Tests
             }
             Check(mantled, "Mantle event never fired");
             Check(g.Player.Position.Y >= 2.0f, "Did not finish above the ledge lip");
+        }
+
+        private static void PlatformThicknessInvariant()
+        {
+            Check(WorldCollision.MaxSubstep < WorldCollision.MinSolidThickness, "MaxSubstep must stay below MinSolidThickness");
+            for (int biome = 0; biome < 3; biome++)
+            {
+                var g = new GameSession(new JourneySave { Biome = biome });
+                foreach (var p in g.World.Platforms)
+                {
+                    if (!p.Enabled) continue;
+                    float thin = Math.Min(p.Bounds.W, p.Bounds.H);
+                    Check(thin + 1e-4f >= WorldCollision.MinSolidThickness,
+                        "Thin platform in biome " + biome + " size " + p.Bounds.W + "x" + p.Bounds.H);
+                }
+            }
+        }
+
+        private static void SpeedSubstepBudget()
+        {
+            var tuning = new MovementTuning();
+            float peak = Math.Max(tuning.PounceMaxSpeed, Math.Max(tuning.DashSpeed, tuning.MaxFall));
+            float perTick = peak * GameSession.StepSeconds;
+            int steps = Math.Max(1, (int)Math.Ceiling(perTick / WorldCollision.MaxSubstep));
+            Check(perTick / steps <= WorldCollision.MaxSubstep + 1e-5f, "Peak speed exceeds sub-step budget");
+            Check(steps >= 1, "Sub-step count collapsed");
+        }
+
+        private static void SweepDetectsThinWall()
+        {
+            // Wall thinner than MaxSubstep: discrete single step could miss; sweep must still report TOI.
+            var mover = new Box(0, 0, .9f, 1.05f);
+            var wall = new Box(2, -1, .08f, 4);
+            float toi; int axis;
+            bool hit = WorldCollision.SweepAABB(mover, new V2(5, 0), wall, out toi, out axis);
+            Check(hit, "Sweep missed thin wall");
+            Check(toi > 0 && toi < 1, "TOI not in open unit interval");
+            Check(axis == 0, "Expected horizontal dominant axis");
+            // Clear path should miss.
+            Check(!WorldCollision.SweepAABB(mover, new V2(0, 3), wall, out toi, out axis), "False positive on clear vertical path");
         }
     }
 }
