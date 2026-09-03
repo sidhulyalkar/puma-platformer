@@ -5,7 +5,7 @@
 A low coil, a long leap, a committed sweep, a soft roll, claws catching a wall, and a tail balancing in flight.  
 Movement and combat share the same language. Hunting creates routes and recovers momentum.
 
-## Current Kit (v0.4 + mantle foundation)
+## Current Kit (v0.5)
 
 | Verb | Purpose | Feel Target |
 | --- | --- | --- |
@@ -16,57 +16,58 @@ Movement and combat share the same language. Hunting creates routes and recovers
 | Dash-claw / Moonfang | Closing + strike | Readable commitment |
 | Ground roll | Timed defense + low profile | Vulnerable ends, clear dodge window |
 | Spring flower | Route linking + resource refresh | Instant upward joy |
-| **Mantle / ledge grab** | Vertical recovery & readability | Automatic when rising into a clear lip |
+| Mantle / ledge grab | Vertical recovery & readability | Automatic when rising into a clear lip |
+| **Soft tail-glide** | Brief float after full pounce / stomp | Hold jump; limited budget |
+| **Air-control window** | Steering after recovery moves | Short boost to air accel |
 
-**Priority**: human playtest and tune the above before adding further verbs. Record hesitation, missed landings, and recovery clarity.
+**Priority**: human playtest and tune the above. Record hesitation, missed landings, and recovery clarity.
 
-## Mantle Implementation (v0.5 foundation)
+## Mantle Implementation
 
-Inspired by common public 2D platformer patterns (ledge detection + short locked pull-up) found in open repositories such as:
+See prior notes. Detection via `TryFindLedge`; short locked rise; `GameEvent.Mantle`.
 
-- ta-david-yu/2D-Platformer-Hunter (ledge grabbing)
-- Matthew-J-Spencer/Ultimate-2D-Controller (feel tricks & ledge concepts)
-- Unity CharacterControllerSamples Platformer ledge-grab state notes
+## Soft Tail-Glide + Air-Control Window
 
-**No third-party code or assets were copied.** The system is implemented originally against Wildbound’s rectangular AABB solver.
+### Tail-glide contract
 
-### Contract
+- **Grant:** full pounce (`Charge >= FullPounceCharge` ≈ 0.85) or upward recovery launch (stomp / falling-rake rebound, vertical > 8).
+- **Use:** airborne, hold jump, budget remaining, not rolling/dashing/mantling.
+- **Effect:** gravity scaled by `GlideGravityScale` (≈ 0.38); no extra fall multiplier while active.
+- **Limit:** budget drains in real time (`GlideSeconds` ≈ 0.55; recovery grants ~70%); clears on ground.
+- **Event:** `GameEvent.Glide` on first frame of engagement (audio/VFX).
+- **Not** unlimited flight — miss the landing window and normal fall returns.
 
-- Detection: `WorldCollision.TryFindLedge` looks for a solid platform top near chest height in the facing direction with clear standing space above it.
-- Trigger: automatic while airborne, not low-profile, not rolling/dashing, and vertical velocity ≥ −2 (prefers rising / near-apex approaches so pure falls past a ledge do not auto-grab).
-- State: short locked rise (`MantleSeconds` ≈ 0.22 s at `MantleSpeed`) then a small forward hop onto the surface.
-- Event: `GameEvent.Mantle` for audio/VFX hooks.
-- Does not create infinite vertical climb on plain walls; requires a real lip with clear top space.
+### Air-control window contract
 
-### Tuning knobs (`MovementTuning`)
+- **Grant:** wall kick, mantle completion, spring, pounce, or any `Launch` / recovery.
+- **Duration:** `AirControlSeconds` ≈ 0.32 s.
+- **Effect:** air acceleration × `AirControlAccelMult` (≈ 2.15) while the timer is positive.
+- Clears on ground.
 
-- `MantleSeconds`, `MantleSpeed`
-- `MantleReachX`, `MantleReachY`
+### Tuning knobs
 
-### Regression
+- `GlideSeconds`, `GlideGravityScale`, `FullPounceCharge`
+- `AirControlSeconds`, `AirControlAccelMult`
 
-`SimulationCases.MantleOntoLedge` verifies a rising approach onto a clear ledge produces `GameEvent.Mantle` and leaves the puma above the lip.
+### Regressions
 
-## Proposed Next Additions (Ordered)
+- `FullPounceGrantsGlide` — full coil + hold jump engages glide and slows descent vs no hold
+- `AirControlAfterWallKick` — post-kick lateral steering reaches farther than baseline air accel alone
+- Glide budget expires (no infinite float)
 
-### 1. Soft Tail Glide / Counterweight (Medium)
-- Brief, controllable float or slight upward bias while holding a button after a full pounce or successful falling rake.
-- Feels feline; limited duration so it does not become unlimited glide.
+## Later candidates
 
-### 2. Directional Air Control Window
-- Short window of increased air acceleration after wall kick, falling-rake rebound, or mantle.
-
-### 3. Later Candidates
-- Limited claw-climb on specifically tagged textured surfaces.
-- One-way platforms and gentle slopes (requires careful collision ownership changes).
-- Mantling into an immediate pounce or claw for advanced expression.
+- Limited claw-climb on tagged surfaces
+- One-way platforms / gentle slopes
+- Mantle into immediate pounce or claw
+- Wind fields (see NATURAL_SYSTEMS.md)
 
 ## Tuning Discipline
 
-- All new movement must remain deterministic and covered by regression routes.
-- Prefer additive flags and short locked states over continuous new physics models.
-- Keep the rectangular solver as the single source of truth; do not mix Rigidbody2D motion.
-- Document every new constant in `MovementTuning` and update the teaching order.
+- Deterministic + regression-covered
+- Additive short states, not new physics models
+- Rectangular solver remains the source of truth
+- Document every new constant in `MovementTuning`
 
 ## Feel Checklist (Playtest)
 
@@ -76,4 +77,6 @@ Inspired by common public 2D platformer patterns (ledge detection + short locked
 - [ ] Roll recovery is readable under pressure
 - [ ] Players can see the landing before committing to a long pounce
 - [ ] Mantle recovers near-miss vertical approaches without feeling sticky
+- [ ] Tail-glide softens a full pounce arc without removing commitment
+- [ ] Air-control after kick/mantle feels responsive, not floaty forever
 - [ ] Optional routes feel like rewards, not chores
