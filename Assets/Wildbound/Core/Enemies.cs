@@ -5,7 +5,7 @@ namespace Wildbound.Core
 {
     public enum EnemyKind { ClawPost, MossHare, Thornling, Bristleback, ReedSpitter, LanternMoth }
     public enum EnemyPhase { Idle, Tell, Active, Recover, Stunned, Defeated }
-    public enum BloomKind { Standard, Updraft, WideDazzle, Vine }
+    public enum BloomKind { Standard, Updraft, WideDazzle, Vine, Ember }
 
     public sealed class Projectile
     {
