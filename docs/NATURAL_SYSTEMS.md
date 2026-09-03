@@ -11,55 +11,47 @@ All new interactions must remain readable, optional where possible, and compatib
 4. **Optional depth** — main exits stay open; natural systems enrich scenic routes and trials.
 5. **Deterministic** — every interaction must be regression-testable.
 
-## Current Systems (v0.4)
+## Current Systems (v0.5)
 
 | System | Behavior | Persistence |
 | --- | --- | --- |
 | Moonbloom / Moonwake | Claw activates 6 s flare + lasting bridge for the visit | Temporary unless waystone restored |
-| Scent rings | Visible only while stalking, line-of-sight, local | Transient |
-| Wind perch | Horizontal drift + balance charge while centered & stalking | Attunement survives fall inside trial |
+| Scent rings (tracks) | Visible only while stalking, line-of-sight, local | Transient |
+| **Hare scent marks** | Defeated moss hares drop a short-lived mark | ~4.5 s; visit-local |
+| Wind perch (trial) | Horizontal drift + balance charge while centered & stalking | Attunement survives fall inside trial |
+| **Wind fields (Sky Garden)** | Bounded ribbons add velocity while overlapping | Authored; optional routes |
 | Moonbell | Downward rake rebound + traversal refresh | Cooldown |
 | Spring flower | Upward launch + pounce/air-dash refresh | Always |
 | Golden discovery paths | Opened by reaching a wild place | Saved |
+| **Memory vignettes** | Discovery / memory pickup sets `LastVignette` | Display timer; Unity presents UI |
 
-## Proposed Expansions (Priority Order)
+## Wind fields
 
-### 1. Wind Fields (Sky Garden first)
-- Bounded horizontal or slight vertical drift zones marked by subtle particle ribbons.
-- Affects free fall and pounce arcs predictably.
-- Can be used to extend a pounce or must be countered on perches.
-- Implementation: additive velocity term inside the existing sub-step solver (same pattern as trial wind).
+- `WindField(bounds, velocity)` stored on `WorldDefinition.WindFields`.
+- `NaturalSystems.SampleWind` sums all overlapping fields at a point.
+- `GameSession` adds `wind * dt` to the motion delta every step (alongside trial perch wind).
+- Sky Garden ships two mild ribbons on upper shelves; the ground exit path does not require them.
+- Strength stays low so TraverseWorlds / main-route regressions remain stable.
 
-### 2. Scent Persistence & Herding
-- Killed or startled hares leave a short-lived scent trail that can be followed.
-- Optional: a hare that can be gently herded toward an enemy as a distraction (advanced, keep simple first).
-- Never required for progress.
+## Memory vignettes
 
-### 3. Bloom Variants
-- **Updraft bloom**: short vertical lift after activation.
-- **Vine bloom**: temporary climbable surface (still rectangular AABB) for a few seconds.
-- **Wide dazzle**: larger moth interrupt radius.
-- All variants keep the same “claw → visible response → lasting or timed geometry” contract.
+- `WildPlace.MemoryTitle` + `ToVignette(biome)` produce title / body / beat.
+- Memory pickups use `MemoryDescriptor.ForBiome` + world `Memory` line.
+- `GameSession.LastVignette` + `VignetteTime` are the simulation contract for Unity UI.
+- Never gates progress.
 
-### 4. Light-Reactive Prey / Soft Platforms
-- Certain prey or moths, when dazzled, leave a brief soft platform or slow-fall zone.
-- Gives skilled players extra route options without punishing others.
+## Hare scent marks
 
-### 5. Moon-Phase Ambient (Post-Waystone)
-- After all three waystones are restored, subtle palette and particle shifts.
-- New optional scent trails or golden micro-paths can appear.
-- No new required content; purely atmospheric + discovery reward.
+- On `GameEvent.Hunt`, drop a `ScentMark` at the impact point.
+- Cap 16 marks; life ~4.5 s; advanced each tick.
+- Visible with the same stalking + LOS rules as discovery tracks.
 
-## Rules for New Geometry
+## Later expansions
 
-- All temporary platforms remain full solid AABBs while active.
-- Thickness ≥ 0.13 units.
-- Activation must be visible before the player is expected to commit.
-- Reset rules must be explicit (visit end, trial leave, or timed).
+- Bloom variants (updraft / vine / wide dazzle)
+- Light-reactive soft platforms
+- Moon-phase ambient after three waystones
 
-## Testing Contract
+## Testing contract
 
-Any new natural system must ship with:
-- At least one deterministic regression route that activates and uses it.
-- A clear “why it failed” state that the objective / journal can surface if used in a trial.
-- No change to the existing 112+ case surface without explicit expansion of the test suite.
+Any new natural system ships with at least one deterministic regression that activates and uses it.
