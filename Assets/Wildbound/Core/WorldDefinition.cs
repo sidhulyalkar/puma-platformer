@@ -50,6 +50,7 @@ namespace Wildbound.Core
         public readonly List<Moonbloom> Blooms = new List<Moonbloom>();
         public readonly List<WindField> WindFields = new List<WindField>();
         public readonly List<ScentMark> ScentMarks = new List<ScentMark>();
+        public readonly List<EncounterPack> Encounters = new List<EncounterPack>();
         public void Add(float x, float y, float w, float h = 1, Surface surface = Surface.Moss, float travel = 0)
         { Platforms.Add(new Platform(new Box(x, y, w, h), surface, travel)); }
 
