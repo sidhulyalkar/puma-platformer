@@ -22,7 +22,6 @@ namespace Wildbound.Core
         }
     }
 
-    /// <summary>The same simulation is used by Unity and the CPU regression runner.</summary>
     public sealed class GameSession
     {
         public const float StepSeconds = 1f / 120;
@@ -163,8 +162,9 @@ namespace Wildbound.Core
             V2 delta = Player.Velocity * dt;
             V2 wind = NaturalSystems.SampleWind(World, Player.Bounds.Center);
             delta = delta + wind * dt;
+            V2 lift = NaturalSystems.SampleUpdraft(World, Player.Bounds.Center);
+            delta = delta + lift * dt;
             if (InTrial) delta.X += World.Trial.WindDrift(Player, Time) * dt;
-            // Substeps bound travel below the thinnest authored collider (see docs/CCD.md).
             int steps = Math.Max(1, (int)Math.Ceiling(Math.Max(Math.Abs(delta.X), Math.Abs(delta.Y)) / WorldCollision.MaxSubstep));
             Player.Grounded = false; Player.GroundIndex = -1;
             for (int i = 0; i < steps; i++)
@@ -264,12 +264,9 @@ namespace Wildbound.Core
         {
             if (Player.Mantling || Player.Grounded || Player.LowProfile || Player.RollTime > 0 || Player.DashTime > 0) return;
             if (Player.Velocity.Y < -2f) return;
-
-            float targetY;
-            int index;
+            float targetY; int index;
             if (!WorldCollision.TryFindLedge(World, Player, out targetY, out index)) return;
             if (!Player.TryStartMantle()) return;
-
             var ledge = World.Platforms[index].Bounds;
             float standX = Player.Facing > 0 ? ledge.X + .4f : ledge.Right - .4f;
             Player.Position = new V2(standX, Math.Min(Player.Position.Y, targetY - .05f));
