@@ -7,18 +7,28 @@ namespace Wildbound.Core
     public sealed class JourneySave
     {
         public int Version = 1, Biome, FurthestBiome, Waystones, Discoveries;
-        public int[] Collected = new int[3], Checkpoints = { -1, -1, -1 };
+        public int[] Collected = new int[4], Checkpoints = { -1, -1, -1, -1 };
         public bool Completed;
         public void Sanitize()
         {
-            if (Version != 1) { Biome = FurthestBiome = Waystones = Discoveries = 0; Collected = new int[3]; Checkpoints = new[] { -1, -1, -1 }; Completed = false; }
-            Version = 1; Biome = Math.Max(0, Math.Min(2, Biome));
-            FurthestBiome = Math.Max(Biome, Math.Max(0, Math.Min(2, FurthestBiome)));
-            Waystones = Waystones < 0 ? 0 : Waystones & 7;
-            Discoveries = Discoveries < 0 ? 0 : Discoveries & 63;
-            if (Collected == null || Collected.Length != 3) Collected = new int[3];
-            if (Checkpoints == null || Checkpoints.Length != 3) Checkpoints = new[] { -1, -1, -1 };
-            for (int i = 0; i < 3; i++) { Collected[i] &= (1 << 13) - 1; Checkpoints[i] = Math.Max(-1, Math.Min(1, Checkpoints[i])); }
+            if (Version != 1) { Biome = FurthestBiome = Waystones = Discoveries = 0; Collected = new int[4]; Checkpoints = new[] { -1, -1, -1, -1 }; Completed = false; }
+            Version = 1; Biome = Math.Max(0, Math.Min(3, Biome));
+            FurthestBiome = Math.Max(Biome, Math.Max(0, Math.Min(3, FurthestBiome)));
+            Waystones = Waystones < 0 ? 0 : Waystones & 15;
+            Discoveries = Discoveries < 0 ? 0 : Discoveries & 255;
+            if (Collected == null || Collected.Length != 4)
+            {
+                var c = new int[4];
+                if (Collected != null) for (int i = 0; i < Math.Min(Collected.Length, 4); i++) c[i] = Collected[i];
+                Collected = c;
+            }
+            if (Checkpoints == null || Checkpoints.Length != 4)
+            {
+                var cp = new[] { -1, -1, -1, -1 };
+                if (Checkpoints != null) for (int i = 0; i < Math.Min(Checkpoints.Length, 4); i++) cp[i] = Checkpoints[i];
+                Checkpoints = cp;
+            }
+            for (int i = 0; i < 4; i++) { Collected[i] &= (1 << 13) - 1; Checkpoints[i] = Math.Max(-1, Math.Min(1, Checkpoints[i])); }
         }
     }
 
@@ -40,14 +50,14 @@ namespace Wildbound.Core
         public float VignetteTime { get; private set; }
         public int DiscoveryCount
         {
-            get { int n = 0; for (int i = 0; i < 6; i++) if ((Save.Discoveries & (1 << i)) != 0) n++; return n; }
+            get { int n = 0; for (int i = 0; i < 8; i++) if ((Save.Discoveries & (1 << i)) != 0) n++; return n; }
         }
         private WorldDefinition outsideWorld;
         private V2 outsidePosition;
         private float outsideTime;
         public bool InTrial { get { return World.Trial != null; } }
-        public bool WaystoneRestored(int biome) { return biome >= 0 && biome < 3 && (Save.Waystones & (1 << biome)) != 0; }
-        public int WaystoneCount { get { return (Save.Waystones & 1) + ((Save.Waystones >> 1) & 1) + ((Save.Waystones >> 2) & 1); } }
+        public bool WaystoneRestored(int biome) { return biome >= 0 && biome < 4 && (Save.Waystones & (1 << biome)) != 0; }
+        public int WaystoneCount { get { int n = 0; for (int i = 0; i < 4; i++) if ((Save.Waystones & (1 << i)) != 0) n++; return n; } }
         public GameSession(JourneySave save = null)
         {
             Save = save ?? new JourneySave(); Save.Sanitize(); LoadWorld(Save.Biome);
@@ -68,7 +78,15 @@ namespace Wildbound.Core
         {
             if (!WaystoneRestored(Save.Biome) || InTrial) return;
             foreach (var bloom in World.Blooms) bloom.Awakened = true;
-            foreach (var platform in World.Platforms) if (platform.Surface == Surface.Moonbridge) platform.Enabled = true;
+            foreach (var platform in World.Platforms)
+                if (platform.Surface == Surface.Moonbridge)
+                {
+                    // Ember bridges stay timed; only lasting standard bridges restore.
+                    bool ember = false;
+                    if (platform.LightSource >= 0 && platform.LightSource < World.Blooms.Count)
+                        ember = World.Blooms[platform.LightSource].Kind == BloomKind.Ember;
+                    if (!ember) platform.Enabled = true;
+                }
         }
         public bool TryEnterTrial()
         {
@@ -110,7 +128,7 @@ namespace Wildbound.Core
         }
         public int Memories
         {
-            get { int n = 0; for (int i = 0; i < 3; i++) if ((Save.Collected[i] & 1) != 0) n++; return n; }
+            get { int n = 0; for (int i = 0; i < 4; i++) if ((Save.Collected[i] & 1) != 0) n++; return n; }
         }
         public Sign NearbySign()
         {
@@ -153,6 +171,12 @@ namespace Wildbound.Core
                 {
                     foreach (var platform in World.Platforms)
                         if (platform.LightSource == bi && platform.Surface == Surface.Vine)
+                            platform.Enabled = bloom.GlowTime > 0;
+                }
+                else if (bloom.Kind == BloomKind.Ember)
+                {
+                    foreach (var platform in World.Platforms)
+                        if (platform.LightSource == bi && platform.Surface == Surface.Moonbridge)
                             platform.Enabled = bloom.GlowTime > 0;
                 }
             }
@@ -265,7 +289,7 @@ namespace Wildbound.Core
             if (input.InteractPressed && TryEnterTrial()) return;
             if (input.InteractPressed && (Player.Position - World.Exit).Length < 2.2f)
             {
-                if (Save.Biome < 2) { LoadWorld(Save.Biome + 1); Events |= GameEvent.Portal; }
+                if (Save.Biome < 3) { LoadWorld(Save.Biome + 1); Events |= GameEvent.Portal; }
                 else if (!Save.Completed) { Save.Completed = true; Events |= GameEvent.Portal; }
             }
         }
