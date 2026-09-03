@@ -2,11 +2,11 @@
 
 ## Core Style
 
-Procedural cut-paper diorama. Distinctive, performant, and fitting for a nocturnal nature game.
+**Procedural cut-paper diorama.** Distinctive, performant, nocturnal. Silhouette-first shapes in `WorldView` — not a drop-in pixel tileset.
 
 **Non-negotiables**
-- Strong silhouettes first (especially the articulated puma).
-- Pale, slightly luminous platform lips so landings are always legible.
+- Strong silhouettes first (articulated puma).
+- Pale luminous platform lips for landings.
 - Warm fur + amber enemy warnings.
 - Cool blue moonwake / bridges.
 - Cyan scent rings.
@@ -16,49 +16,53 @@ Procedural cut-paper diorama. Distinctive, performant, and fitting for a nocturn
 
 | Role | Color Language |
 | --- | --- |
-| Puma | Warm fur accents, readable against all three night palettes |
+| Puma | Warm fur accents |
 | Safe landings | Pale lips / edges |
 | Committed attacks | Amber warnings |
 | Moon systems | Blue / cyan |
-| Scent | Soft cyan rings, local only |
-| Discovery / golden paths | Warm gold / starflower bloom |
-| Danger / contact | Clear red or high-contrast flash (keep short) |
+| Scent | Soft cyan rings |
+| Discovery | Warm gold |
+| Danger | Short red / high-contrast flash |
+| Cinder heat | Ember orange on vents (never hide lips) |
+| Bark climb | Subtle grain / claw-scratch on climbable faces |
 
-## Animation Priorities
+## Region scene recipes
 
-1. Charge coil compression and release — weighty and anticipatory.
-2. Gait, tail counterbalance, head tracking.
-3. Distinct roll and stalk poses.
-4. Claw arc and impact feedback that does not obscure the next input window.
-5. Landing squash and particle that still leaves the next jump readable.
+| Biome | Atmosphere | Micro-motion | Landmark |
+| --- | --- | --- | --- |
+| **Amber Canopy** | Layered leaf cut-outs, warm dust | Slow leaf drift | Moonbloom through canopy gaps |
+| **Lantern Grotto** | Stacked shelves, soft god-rays | Lantern sway, moth dust | Vine rim while active |
+| **Sky Garden** | Island silhouettes, thin clouds | Wind ribbon streaks | Spring pulse, dazzle burst |
+| **Cinder Ravine** | Basalt slabs, ember haze | Vent shimmer columns | Emberbloom orange while burning |
+
+## Public graphics references (inspiration, not imports)
+
+Art stays **original procedural** to match the simulation-first core. These **CC0 / public** sources are approved **mood and silhouette** references:
+
+| Source | Licence | Use for |
+| --- | --- | --- |
+| [Kenney Game Assets](https://kenney.nl/assets) | CC0 | Silhouette clarity, UI spareness |
+| [Deep Night (VEXED)](https://v3x3d.itch.io/deep-night) | CC0 | Nocturnal value structure |
+| [SunnyLand Forest (ansimuz)](https://ansimuz.itch.io/sunnyland-forest) | CC0 | Parallax layering lessons |
+| [OGA nature tiles](https://opengameart.org/content/2d-nature-platformer-tileset-16x16) | CC0 | Prop density studies |
+| [RavenTale free sprites](https://www.raventalestudio.com/free_tileset) | Public domain | Soft diorama props |
+| [jam-ready-assets](https://github.com/series-ai/jam-ready-assets) | Mostly CC0 | Curated pack index |
+
+**Do not** paste pixel tiles over the cut-paper solver without a deliberate direction change. Prefer silhouette study, palette sampling into `Hex(...)`, and optional CC0 particle sprites in pooled VFX only.
 
 ## Feedback Hierarchy
 
-1. **Critical** (must be readable at speed): enemy telegraph, platform edge, pounce charge state, dodge grace.
-2. **Important**: moonbloom flare, scent ring, wind ribbon, objective direction.
-3. **Atmospheric**: parallax, distant lanterns, ambient particles, memory vignettes.
+1. **Critical:** enemy Tell + amber, platform edge, pounce charge, dodge grace, bark climbability.
+2. **Important:** bloom flare, scent, wind/heat ribbon, second threat entering Tell.
+3. **Atmospheric:** parallax, lanterns, ember haze, vignettes.
 
-Never let atmospheric effects compete with critical information.
+## Encounter VFX
 
-## Interaction Feedback Standards
+- StaggerTell: sequential amber pips
+- TwinDive: mirrored wing-flash offsets
+- Pincer: frontliner dust; support thin aim line
+- Only one full-screen flash at a time
 
-- Moonbloom: flare + particles + sound + bridge outline → solid.
-- Wind perch: visible ribbon + fill gauge readable under pressure.
-- Discovery: starflower bloom + golden path materialization (rewarding, not flashy).
-- Distant destinations: soft glow or atmospheric perspective so players can plan before committing.
+## Implementation
 
-## Reduced Motion
-
-Already supported. Protect it. Prefer still scent cues and limited particles over removing information.
-
-## Future Art Passes
-
-- Stronger puma silhouette and secondary motion.
-- Region-specific parallax and micro-animations (leaves, mist, lantern sway).
-- Memory sequences as short environmental reconstructions rather than full cutscenes.
-- Reactive environment particles tied to moonwake and discovery.
-- Background music that respects the quiet nocturnal tone (reactive to region and combat intensity).
-
-## Implementation Note
-
-`WorldView` and the combat/exploration/trial view partials already own the visual layer. New effects should stay in the pooled particle / sprite systems and never drive simulation state.
+Visuals never drive simulation. Encounter timing lives in `EncounterDirector` (headless).
