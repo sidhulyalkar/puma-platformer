@@ -43,7 +43,8 @@ namespace Wildbound.Tests
             { "Invalid timesteps and input are rejected", InvalidInput },
             { "Identical input replays produce identical state", Replay },
             { "Movement-only traversal reaches every world exit", TraverseWorlds },
-            { "Seeded long play remains finite and inside world bounds", LongPlay }
+            { "Seeded long play remains finite and inside world bounds", LongPlay },
+            { "Rising into a clear ledge triggers mantle", MantleOntoLedge }
         };
         private static void Check(bool value, string message) { if (!value) throw new Exception(message); }
         private static bool Near(float a, float b, float epsilon = .02f) { return Math.Abs(a - b) < epsilon; }
@@ -247,6 +248,24 @@ namespace Wildbound.Tests
                     Check(g.Player.Position.X > -6 && g.Player.Position.X < 82 && g.Player.Position.Y > -8.1f, "Escaped world bounds");
                 }
             }
+        }
+        private static void MantleOntoLedge()
+        {
+            var g = Flat();
+            // Ground at y=0, a ledge platform starting at x=2 with top at y=2.2
+            g.World.Add(2, 0, 4, 2.2f);
+            g.Player.Reset(new V2(1.4f, 1.1f));
+            g.Player.Facing = 1;
+            g.Player.Velocity = new V2(3, 6); // rising toward the lip
+            bool mantled = false;
+            for (int i = 0; i < 90; i++)
+            {
+                g.Step(new PlayerInput { Move = 1 });
+                if ((g.Events & GameEvent.Mantle) != 0) mantled = true;
+                if (g.Player.Grounded && g.Player.Position.Y >= 2.1f) break;
+            }
+            Check(mantled, "Mantle event never fired");
+            Check(g.Player.Position.Y >= 2.0f, "Did not finish above the ledge lip");
         }
     }
 }

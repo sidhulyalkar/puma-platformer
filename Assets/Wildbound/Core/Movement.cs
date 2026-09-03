@@ -12,6 +12,9 @@ namespace Wildbound.Core
         public float WallSlideSpeed = 3, WallKickX = 10.5f, WallKickY = 14, WallLockSeconds = .16f;
         public float DashSpeed = 21, DashSeconds = .18f, DashCooldown = .55f;
         public float RollSpeed = 13, RollSeconds = .34f, RollCooldown = .65f;
+        // Mantle / ledge grab (v0.5)
+        public float MantleSeconds = .22f, MantleSpeed = 14f;
+        public float MantleReachX = .55f, MantleReachY = .35f;
     }
 
     public struct PlayerInput
@@ -29,7 +32,8 @@ namespace Wildbound.Core
         Claw = 2048, DashClaw = 4096, Roll = 8192, Hit = 16384, Hurt = 32768,
         Defeat = 65536, Hunt = 131072, Block = 262144, Bloom = 524288, Ambush = 1048576,
         Balance = 2097152, Moonbell = 4194304, Breach = 8388608, TrialTravel = 16777216,
-        Waystone = 33554432, ObjectiveBlocked = 67108864, Discovery = 134217728
+        Waystone = 33554432, ObjectiveBlocked = 67108864, Discovery = 134217728,
+        Mantle = 268435456
     }
 
     public sealed class PumaMotor
@@ -41,11 +45,13 @@ namespace Wildbound.Core
         public float Charge, PounceTime;
         public float DashTime, DashCooldown, RollTime, RollCooldown;
         public bool AirDashReady = true, LowProfile, Stalking;
+        public bool Mantling;
+        public float MantleTime;
         private float coyote, buffer, wallLock;
         public float BodyHeight { get { return LowProfile ? .58f : Height; } }
         public Box Bounds { get { return new Box(Position.X - Width / 2, Position.Y, Width, BodyHeight); } }
         public bool Dodging { get { return RollTime > .09f && RollTime < Tuning.RollSeconds - .04f; } }
-        public bool CanDash { get { return DashCooldown <= 0 && RollTime <= 0 && (Grounded || AirDashReady); } }
+        public bool CanDash { get { return DashCooldown <= 0 && RollTime <= 0 && !Mantling && (Grounded || AirDashReady); } }
         public readonly MovementTuning Tuning;
         public PumaMotor(V2 spawn, MovementTuning tuning = null) { Position = spawn; Tuning = tuning ?? new MovementTuning(); }
 
@@ -54,14 +60,14 @@ namespace Wildbound.Core
             Position = spawn; Velocity = new V2(); Grounded = false; GroundIndex = -1; Wall = 0;
             PounceReady = true; Charging = false; Charge = PounceTime = coyote = buffer = wallLock = 0;
             DashTime = DashCooldown = RollTime = RollCooldown = 0;
-            AirDashReady = true; LowProfile = Stalking = false;
+            AirDashReady = true; LowProfile = Stalking = Mantling = false; MantleTime = 0;
         }
 
         public GameEvent Prepare(PlayerInput input, float dt)
         {
             GameEvent events = GameEvent.None;
             float move = Scalar.Clamp(input.Move, -1, 1);
-            if (Math.Abs(move) > .1f && wallLock <= 0 && RollTime <= 0 && DashTime <= 0) Facing = move > 0 ? 1 : -1;
+            if (Math.Abs(move) > .1f && wallLock <= 0 && RollTime <= 0 && DashTime <= 0 && !Mantling) Facing = move > 0 ? 1 : -1;
             coyote = Grounded ? Tuning.CoyoteSeconds : Math.Max(0, coyote - dt);
             buffer = input.JumpPressed ? Tuning.BufferSeconds : Math.Max(0, buffer - dt);
             wallLock = Math.Max(0, wallLock - dt);
@@ -69,7 +75,22 @@ namespace Wildbound.Core
             DashTime = Math.Max(0, DashTime - dt); DashCooldown = Math.Max(0, DashCooldown - dt);
             RollTime = Math.Max(0, RollTime - dt); RollCooldown = Math.Max(0, RollCooldown - dt);
             if (Grounded) { PounceReady = true; AirDashReady = true; }
-            Stalking = input.StalkHeld && Grounded && RollTime <= 0 && DashTime <= 0;
+            Stalking = input.StalkHeld && Grounded && RollTime <= 0 && DashTime <= 0 && !Mantling;
+
+            // Active mantle: lock horizontal, rise onto the ledge, then release.
+            if (Mantling)
+            {
+                MantleTime = Math.Max(0, MantleTime - dt);
+                Velocity.X = 0;
+                Velocity.Y = Tuning.MantleSpeed;
+                if (MantleTime <= 0)
+                {
+                    Mantling = false;
+                    Velocity = new V2(Facing * 2.5f, 2.5f); // small forward hop off the lip
+                    Grounded = false; GroundIndex = -1;
+                }
+                return events;
+            }
 
             if (input.RollPressed && Grounded && RollCooldown <= 0 && DashTime <= 0)
             {
@@ -138,22 +159,34 @@ namespace Wildbound.Core
             return events;
         }
 
+        /// <summary>Begin a short locked pull-up onto a detected ledge.</summary>
+        public bool TryStartMantle()
+        {
+            if (Mantling || LowProfile || RollTime > 0 || DashTime > 0 || Grounded) return false;
+            Mantling = true;
+            MantleTime = Tuning.MantleSeconds;
+            Charging = false; Charge = buffer = 0;
+            Velocity = new V2(0, Tuning.MantleSpeed);
+            return true;
+        }
+
         public void Spring()
         {
             Velocity.Y = 20; Grounded = false; GroundIndex = -1;
             PounceReady = true; PounceTime = 0; coyote = buffer = 0;
-            AirDashReady = true;
+            AirDashReady = true; Mantling = false; MantleTime = 0;
         }
 
         public void Launch(float horizontal, float vertical)
         {
             Velocity = new V2(horizontal, vertical); Grounded = false; GroundIndex = -1;
-            coyote = buffer = 0; wallLock = .14f;
+            coyote = buffer = 0; wallLock = .14f; Mantling = false; MantleTime = 0;
         }
 
         public void Interrupt(int away)
         {
             CancelInput(); PounceTime = DashTime = RollTime = 0;
+            Mantling = false; MantleTime = 0;
             Launch(away * 6, 5);
         }
 
