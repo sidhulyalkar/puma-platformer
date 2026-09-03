@@ -39,14 +39,24 @@ These are starting values, not playtest-proven tuning. See [Night Hunt](NIGHT_HU
 
 Movement tutorial text remains proximity-based. The trial objective card and journal now confirm actual mechanism activation, rather than simply displaying the same lesson forever. The field guide carries a lot of new actions; an input-aware teaching sequence should replace that burden after first-time playtests.
 
+## Remaining Systems — v0.5 Foundation
+
+New design documentation for the systems still to be built:
+
+- [Story & Memories](STORY.md) — emotional through-line, acts, memory vignettes
+- [Natural Systems](NATURAL_SYSTEMS.md) — light, scent, wind, growth interactions
+- [Movement Feel](MOVEMENT_FEEL.md) — polish targets + ordered new verbs (mantle first)
+- [Visual Language](VISUAL_LANGUAGE.md) — palette, silhouette, feedback hierarchy
+
 ## Design boundaries and next milestones
 
 1. **Unity qualification:** clean import, run EditMode and PlayMode, inspect the actual scene, try every move and counter, collect each memory, and build WebGL. Resolve real console and visual issues before extending scope.
-2. **Combat and movement feel:** record claw timing, small jumps, full coils, air-dash chains, low-ceiling rolls, and enemy warnings. Check whether the falling rebound feels earned and whether roll recovery is readable. Tune from observation.
+2. **Combat and movement feel:** record claw timing, small jumps, full coils, air-dash chains, low-ceiling rolls, and enemy warnings. Check whether the falling rebound feels earned and whether roll recovery is readable. Tune from observation. See [Movement Feel](MOVEMENT_FEEL.md).
 3. **Critique the authored regions:** play the Canopy loop, Grotto switchback, and Sky islands. Verify that players see a destination and a landing before committing. Tune the discovery paths using actual play; expand the strongest interaction afterward.
-4. **Light identity:** assess how well scent rings, moonwake, moth reactions, wind-perch gauges, bell cues, and glowing warnings explain themselves. Only then consider light-carrying prey, optional darkness routes, or a light-reactive guardian. These are future ideas, not shipped mechanics.
-5. **World expansion:** the new route tests cover wild places, memories, and returns alongside exits. Human-test every mote and scenic approach next. Cinder Ravine and Frostglass Ridge remain future candidates after the current regions are comfortable to navigate.
-6. **Arcade release:** browser and controller qualification, measured download/frame-time/memory budgets, an actual-game trailer, and integration into sidhulyalkar.com.
+4. **Light identity & natural systems:** assess how well scent rings, moonwake, moth reactions, wind-perch gauges, bell cues, and glowing warnings explain themselves. Then implement the highest-priority natural expansions (wind fields, bloom variants). See [Natural Systems](NATURAL_SYSTEMS.md).
+5. **Story depth via memories:** flesh out the three memory vignettes and ambient reactions after waystones. See [Story](STORY.md).
+6. **World expansion:** only after the current three regions feel excellent. Cinder Ravine and Frostglass Ridge remain candidates.
+7. **Arcade release:** browser and controller qualification, measured download/frame-time/memory budgets, an actual-game trailer, and integration into sidhulyalkar.com.
 
 The custom rectangular solver owns movement and must not be mixed with Rigidbody2D motion without redefining collision ownership. Art, audio cues, and move implementations are original. There is no background music, boss encounter, dynamic shadow simulation, mobile control scheme, or control remapping yet.
 

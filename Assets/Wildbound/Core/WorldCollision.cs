@@ -17,6 +17,21 @@ namespace Wildbound.Core
             return true;
         }
 
+        /// <summary>
+        /// Multi-point line-of-sight for combat strikes.
+        /// Samples center + upper/lower thirds of the strike box toward the target center.
+        /// A strike is valid if any sample is unobstructed (thin pillars no longer false-block silhouette hits).
+        /// </summary>
+        public static bool StrikeClear(WorldDefinition world, Box strike, V2 targetCenter)
+        {
+            V2 c = strike.Center;
+            V2 upper = new V2(c.X, strike.Y + strike.H * .75f);
+            V2 lower = new V2(c.X, strike.Y + strike.H * .25f);
+            return ClearLine(world, c, targetCenter)
+                || ClearLine(world, upper, targetCenter)
+                || ClearLine(world, lower, targetCenter);
+        }
+
         public static bool SegmentHits(V2 from, V2 to, Box box)
         {
             float fraction;
@@ -42,6 +57,54 @@ namespace Wildbound.Core
 
         public static bool GroundBelow(WorldDefinition world, float x, float feet)
         { return OverlapsSolid(world, new Box(x - .1f, feet - .15f, .2f, .16f)); }
+
+        /// <summary>
+        /// Detect a ledge the puma can mantle onto.
+        /// A valid ledge is a solid platform top near the upper body with clear standing space above it.
+        /// Returns true and the target feet Y if a suitable ledge is found in the facing direction.
+        /// </summary>
+        public static bool TryFindLedge(WorldDefinition world, PumaMotor puma, out float targetFeetY, out int platformIndex)
+        {
+            targetFeetY = 0;
+            platformIndex = -1;
+            if (puma.LowProfile || puma.Mantling || puma.Grounded) return false;
+
+            float reachX = puma.Tuning.MantleReachX;
+            float reachY = puma.Tuning.MantleReachY;
+            float chestY = puma.Position.Y + puma.BodyHeight * .55f;
+            float face = puma.Facing;
+
+            for (int i = 0; i < world.Platforms.Count; i++)
+            {
+                var p = world.Platforms[i];
+                if (!p.Enabled) continue;
+                var b = p.Bounds;
+
+                // Lip must be near chest height and in front of the puma.
+                float lipY = b.Top;
+                if (Math.Abs(lipY - chestY) > reachY) continue;
+
+                bool inFront = face > 0
+                    ? (b.X > puma.Position.X - .2f && b.X < puma.Position.X + WidthReach(puma) + reachX)
+                    : (b.Right < puma.Position.X + .2f && b.Right > puma.Position.X - WidthReach(puma) - reachX);
+                if (!inFront) continue;
+
+                // Standing space on top of the ledge must be clear for full height.
+                float standX = face > 0 ? b.X + .35f : b.Right - .35f;
+                var standBox = new Box(standX - PumaMotor.Width / 2, lipY, PumaMotor.Width, PumaMotor.Height);
+                if (OverlapsSolid(world, standBox)) continue;
+
+                // Must not be already overlapping the platform body.
+                if (puma.Bounds.Overlaps(b)) continue;
+
+                targetFeetY = lipY;
+                platformIndex = i;
+                return true;
+            }
+            return false;
+        }
+
+        private static float WidthReach(PumaMotor puma) { return PumaMotor.Width * .5f + .15f; }
 
         public static bool MoveEnemy(WorldDefinition world, Enemy e, V2 delta)
         {

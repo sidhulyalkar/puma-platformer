@@ -173,6 +173,7 @@ namespace Wildbound.Core
                 if ((Events & GameEvent.Hurt) != 0 || (delta.Y < 0 && Player.Velocity.Y > 0)) break;
             }
             ProbeContacts();
+            TryMantle();
             if (!wasGrounded && Player.Grounded) Events |= GameEvent.Land;
             if (Player.Grounded && Player.GroundIndex >= 0 && World.Platforms[Player.GroundIndex].Surface == Surface.Spring)
             { Player.Spring(); Events |= GameEvent.Spring; Combat.OnMovement(GameEvent.Spring); }
@@ -240,6 +241,28 @@ namespace Wildbound.Core
                 if (Save.Biome < 2) { LoadWorld(Save.Biome + 1); Events |= GameEvent.Portal; }
                 else if (!Save.Completed) { Save.Completed = true; Events |= GameEvent.Portal; }
             }
+        }
+
+        /// <summary>
+        /// Automatic mantle when the puma rises into a clear ledge lip.
+        /// Keeps the main path readable and recovers near-miss vertical approaches (Silksong/Ori-style forgiveness).
+        /// </summary>
+        private void TryMantle()
+        {
+            if (Player.Mantling || Player.Grounded || Player.LowProfile || Player.RollTime > 0 || Player.DashTime > 0) return;
+            // Prefer rising or near-apex approaches so falling past a ledge does not auto-grab.
+            if (Player.Velocity.Y < -2f) return;
+
+            float targetY;
+            int index;
+            if (!WorldCollision.TryFindLedge(World, Player, out targetY, out index)) return;
+            if (!Player.TryStartMantle()) return;
+
+            // Snap horizontally toward the ledge center of mass while the locked rise begins.
+            var ledge = World.Platforms[index].Bounds;
+            float standX = Player.Facing > 0 ? ledge.X + .4f : ledge.Right - .4f;
+            Player.Position = new V2(standX, Math.Min(Player.Position.Y, targetY - .05f));
+            Events |= GameEvent.Mantle;
         }
 
         private void MoveAxis(float amount, bool horizontal)
