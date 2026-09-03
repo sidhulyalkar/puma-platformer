@@ -6,7 +6,7 @@ namespace Wildbound.Core
     public enum WildPlaceId { RootHollow = 0, AmberOverlook = 1, StillwaterShelf = 2, LanternRoost = 3, CloudNest = 4, StarflowerCrown = 5 }
 
     /// <summary>
-    /// A discoverable wild place. Stories and hints are the extension point for the memory / narrative system (see docs/STORY.md).
+    /// A discoverable wild place. Stories and MemoryTitle feed the vignette system (docs/STORY.md).
     /// </summary>
     public sealed class WildPlace
     {
@@ -16,8 +16,6 @@ namespace Wildbound.Core
         public readonly V2[] Tracks;
         public bool Found;
         public int Mask { get { return 1 << (int)Id; } }
-
-        // Optional memory title used by future vignette / ambient systems. Empty string means none yet.
         public readonly string MemoryTitle;
 
         public WildPlace(WildPlaceId id, string name, string story, string hint, V2 position, params V2[] tracks)
@@ -54,12 +52,15 @@ namespace Wildbound.Core
             foreach (var platform in world.Platforms)
                 if (platform.DiscoverySource == (int)Id) platform.Enabled = true;
         }
+
+        public MemoryVignette ToVignette(int biome)
+        {
+            string title = !string.IsNullOrEmpty(MemoryTitle) ? MemoryTitle : Name;
+            string beat = biome == 0 ? "Belonging / loss" : biome == 1 ? "Responsibility" : "Acceptance / agency";
+            return new MemoryVignette(title, Story, beat, biome);
+        }
     }
 
-    /// <summary>
-    /// Lightweight memory descriptor for future vignette / ambient systems.
-    /// Kept in Core so the simulation can expose which memories exist without Unity dependencies.
-    /// </summary>
     public sealed class MemoryDescriptor
     {
         public readonly int Biome;
@@ -79,5 +80,11 @@ namespace Wildbound.Core
             new MemoryDescriptor(1, "The Keeper's Lantern", "Responsibility"),
             new MemoryDescriptor(2, "Starflower Crown", "Acceptance / agency")
         };
+
+        public static MemoryDescriptor ForBiome(int biome)
+        {
+            if (biome < 0 || biome >= All.Length) return All[0];
+            return All[biome];
+        }
     }
 }
