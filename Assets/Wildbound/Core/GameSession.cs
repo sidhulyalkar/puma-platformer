@@ -37,6 +37,8 @@ namespace Wildbound.Core
         public float Recovery { get; private set; }
         public bool Paused;
         public WildPlace LastDiscovery { get; private set; }
+        public MemoryVignette LastVignette { get; private set; }
+        public float VignetteTime { get; private set; }
         public int DiscoveryCount
         {
             get { int n = 0; for (int i = 0; i < 6; i++) if ((Save.Discoveries & (1 << i)) != 0) n++; return n; }
@@ -60,7 +62,8 @@ namespace Wildbound.Core
             Combat.ResetForRespawn(); Projectiles.Clear();
             RestoreLightBridges();
             foreach (var place in World.Places) if ((Save.Discoveries & place.Mask) != 0) place.OpenPath(World);
-            LastDiscovery = null;
+            LastDiscovery = null; LastVignette = null; VignetteTime = 0;
+            if (World.ScentMarks != null) World.ScentMarks.Clear();
         }
         private void RestoreLightBridges()
         {
@@ -144,6 +147,8 @@ namespace Wildbound.Core
             Time += dt;
             foreach (var platform in World.Platforms) platform.Update(Time);
             foreach (var bloom in World.Blooms) bloom.GlowTime = Math.Max(0, bloom.GlowTime - dt);
+            NaturalSystems.AdvanceScent(World, dt);
+            if (VignetteTime > 0) VignetteTime = Math.Max(0, VignetteTime - dt);
             if (InTrial) World.Trial.Advance(dt);
             if (Player.LowProfile && Player.RollTime <= 0 && !WorldCollision.OverlapsSolid(World,
                 new Box(Player.Position.X - PumaMotor.Width / 2, Player.Position.Y, PumaMotor.Width, PumaMotor.Height)))
@@ -156,6 +161,8 @@ namespace Wildbound.Core
             foreach (var enemy in World.Enemies) enemy.Step(World, Player, Projectiles, dt);
             bool wasGrounded = Player.Grounded;
             V2 delta = Player.Velocity * dt;
+            V2 wind = NaturalSystems.SampleWind(World, Player.Bounds.Center);
+            delta = delta + wind * dt;
             if (InTrial) delta.X += World.Trial.WindDrift(Player, Time) * dt;
             // Substeps bound travel below the thinnest authored collider (see docs/CCD.md).
             int steps = Math.Max(1, (int)Math.Ceiling(Math.Max(Math.Abs(delta.X), Math.Abs(delta.Y)) / WorldCollision.MaxSubstep));
@@ -172,6 +179,8 @@ namespace Wildbound.Core
                 if (Combat.Health <= 0) { Respawn(); return; }
                 if ((Events & GameEvent.Hurt) != 0 || (delta.Y < 0 && Player.Velocity.Y > 0)) break;
             }
+            if ((Events & GameEvent.Hunt) != 0)
+                NaturalSystems.DropHareScent(World, Combat.LastImpact);
             ProbeContacts();
             TryMantle();
             if (!wasGrounded && Player.Grounded) Events |= GameEvent.Land;
@@ -223,13 +232,22 @@ namespace Wildbound.Core
                 {
                     place.OpenPath(World); Save.Discoveries |= place.Mask;
                     LastDiscovery = place; Events |= GameEvent.Discovery;
+                    LastVignette = place.ToVignette(Save.Biome);
+                    VignetteTime = LastVignette.DisplaySeconds;
                 }
             for (int i = 0; i < World.Pickups.Count; i++)
             {
                 var p = World.Pickups[i];
                 if (p.Collected || (p.Position - Player.Bounds.Center).Length > .95f) continue;
                 p.Collected = true; Save.Collected[Save.Biome] |= 1 << i;
-                Events |= p.Kind == PickupKind.Memory ? GameEvent.Secret : GameEvent.Collect;
+                if (p.Kind == PickupKind.Memory)
+                {
+                    var md = MemoryDescriptor.ForBiome(Save.Biome);
+                    LastVignette = new MemoryVignette(md.Title, World.Memory, md.Beat, Save.Biome);
+                    VignetteTime = LastVignette.DisplaySeconds;
+                    Events |= GameEvent.Secret;
+                }
+                else Events |= GameEvent.Collect;
             }
             for (int i = 0; i < World.Checkpoints.Count; i++)
                 if (Save.Checkpoints[Save.Biome] != i && (Player.Position - World.Checkpoints[i]).Length < 1)
