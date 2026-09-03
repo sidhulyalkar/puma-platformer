@@ -13,6 +13,7 @@ namespace Wildbound.Tests
             foreach (var pair in ExplorationCases.All) All.Add(pair.Key, pair.Value);
             foreach (var pair in NaturalSystemsCases.All) All.Add(pair.Key, pair.Value);
             foreach (var pair in ClimbCases.All) All.Add(pair.Key, pair.Value);
+            foreach (var pair in CinderCases.All) All.Add(pair.Key, pair.Value);
         }
         public static readonly Dictionary<string, Action> All = new Dictionary<string, Action>
         {
@@ -183,7 +184,7 @@ namespace Wildbound.Tests
         }
         private static void PlatformThicknessInvariant()
         {
-            for (int b = 0; b < 3; b++)
+            for (int b = 0; b < 4; b++)
             {
                 var w = WorldDefinition.Create(b);
                 foreach (var p in w.Platforms)
