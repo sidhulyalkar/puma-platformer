@@ -149,7 +149,6 @@ namespace Wildbound.Core
             {
                 var bloom = World.Blooms[bi];
                 bloom.GlowTime = Math.Max(0, bloom.GlowTime - dt);
-                // Vine platforms exist only while the bloom is glowing (timed climbable AABB).
                 if (bloom.Kind == BloomKind.Vine)
                 {
                     foreach (var platform in World.Platforms)
@@ -273,7 +272,7 @@ namespace Wildbound.Core
 
         private void TryMantle()
         {
-            if (Player.Mantling || Player.Grounded || Player.LowProfile || Player.RollTime > 0 || Player.DashTime > 0) return;
+            if (Player.Mantling || Player.Climbing || Player.Grounded || Player.LowProfile || Player.RollTime > 0 || Player.DashTime > 0) return;
             if (Player.Velocity.Y < -2f) return;
             float targetY; int index;
             if (!WorldCollision.TryFindLedge(World, Player, out targetY, out index)) return;
@@ -307,14 +306,23 @@ namespace Wildbound.Core
         {
             Box b = Player.Bounds;
             Player.Wall = 0;
+            Player.WallClimbable = false;
             for (int i = 0; i < World.Platforms.Count; i++)
             {
                 if (!World.Platforms[i].Enabled) continue;
                 Box p = World.Platforms[i].Bounds;
                 if (Player.Velocity.Y <= 0 && new Box(b.X + .04f, b.Y - .025f, b.W - .08f, .025f).Overlaps(p))
                 { Player.Grounded = true; Player.GroundIndex = i; }
-                if (new Box(b.Right, b.Y + .08f, .04f, b.H - .16f).Overlaps(p)) Player.Wall = 1;
-                else if (new Box(b.X - .04f, b.Y + .08f, .04f, b.H - .16f).Overlaps(p)) Player.Wall = -1;
+                if (new Box(b.Right, b.Y + .08f, .04f, b.H - .16f).Overlaps(p))
+                {
+                    Player.Wall = 1;
+                    if (World.Platforms[i].Surface == Surface.Bark) Player.WallClimbable = true;
+                }
+                else if (new Box(b.X - .04f, b.Y + .08f, .04f, b.H - .16f).Overlaps(p))
+                {
+                    Player.Wall = -1;
+                    if (World.Platforms[i].Surface == Surface.Bark) Player.WallClimbable = true;
+                }
             }
         }
     }
