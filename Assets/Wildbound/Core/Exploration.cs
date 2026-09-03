@@ -6,23 +6,31 @@ namespace Wildbound.Core
     // Persistent IDs: never renumber these when reordering or moving places.
     public enum WildPlaceId { RootHollow = 0, AmberOverlook = 1, StillwaterShelf = 2, LanternRoost = 3, CloudNest = 4, StarflowerCrown = 5, CharcoilDen = 6, QuietFireRidge = 7 }
 
+    /// <summary>
+    /// A discoverable wild place. Stories and MemoryTitle feed the vignette system (docs/STORY.md).
+    /// </summary>
     public sealed class WildPlace
     {
         public readonly WildPlaceId Id;
-        public readonly string Name, Story, Hint, MemoryTitle;
+        public readonly string Name, Story, Hint;
         public readonly V2 Position;
         public readonly V2[] Tracks;
         public bool Found;
-
         public int Mask { get { return 1 << (int)Id; } }
+        public readonly string MemoryTitle;
 
         public WildPlace(WildPlaceId id, string name, string story, string hint, V2 position, params V2[] tracks)
-            : this(id, name, story, hint, name, position, tracks) { }
+            : this(id, name, story, hint, "", position, tracks) { }
 
         public WildPlace(WildPlaceId id, string name, string story, string hint, string memoryTitle, V2 position, params V2[] tracks)
         {
-            Id = id; Name = name; Story = story; Hint = hint; MemoryTitle = memoryTitle ?? name;
-            Position = position; Tracks = tracks ?? new V2[0];
+            Id = id;
+            Name = name;
+            Story = story;
+            Hint = hint;
+            MemoryTitle = memoryTitle ?? "";
+            Position = position;
+            Tracks = tracks ?? Array.Empty<V2>();
         }
 
         public bool Reached(PumaMotor player)
@@ -49,7 +57,7 @@ namespace Wildbound.Core
 
         public MemoryVignette ToVignette(int biome)
         {
-            return new MemoryVignette(MemoryTitle, Story, Hint, biome);
+            return new MemoryVignette(string.IsNullOrEmpty(MemoryTitle) ? Name : MemoryTitle, Story, Hint, biome);
         }
     }
 
