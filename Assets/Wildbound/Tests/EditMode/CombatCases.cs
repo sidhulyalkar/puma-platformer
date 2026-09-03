@@ -50,7 +50,11 @@ namespace Wildbound.Tests
             { "Training post cannot farm hunt rewards", NoDummyReward },
             { "Pause freezes attacks, enemies, blooms and projectiles", PauseAll },
             { "Respawn clears projectiles and attack state", CombatRespawn },
-            { "Combat stress play stays finite and collision-safe", CombatStress }
+            { "Combat stress play stays finite and collision-safe", CombatStress },
+            { "Thin-gap LOS still allows a clear silhouette hit", ThinGapLos },
+            { "Fully occluded target remains blocked by multi-point LOS", FullWallBlocksStrike },
+            { "Front armor holds when slightly above the front face", ArmorEdgeSlightlyAbove },
+            { "Active claw and descending body never double-hit", NoDoubleHitClawAndBody }
         };
         private static void Check(bool condition, string why) { if (!condition) throw new Exception(why); }
         private static GameSession Flat()
@@ -345,6 +349,52 @@ namespace Wildbound.Tests
                         Check(!platform.Enabled || !g.Player.Bounds.Overlaps(new Box(platform.Bounds.X + .002f, platform.Bounds.Y + .002f, platform.Bounds.W - .004f, platform.Bounds.H - .004f)), "Player embedded in terrain");
                 }
             }
+        }
+
+        // --- AABB precision cases (docs/COMBAT_PRECISION.md) ---
+
+        private static void ThinGapLos()
+        {
+            // Thin pillar offset so center-to-center is blocked but upper/lower samples clear.
+            var g = Flat();
+            g.World.Add(.55f, .35f, .12f, .35f); // small mid-height blocker
+            var e = Target(g, EnemyKind.Thornling, 1.35f);
+            Swing(g);
+            Check(e.Health < e.MaxHealth, "Multi-point LOS should still connect past a thin mid gap");
+        }
+
+        private static void FullWallBlocksStrike()
+        {
+            var g = Flat();
+            g.World.Add(.7f, 0, .2f, 4); // full-height wall
+            var e = Target(g, EnemyKind.ClawPost, 1.5f);
+            Swing(g);
+            Check(e.Health == e.MaxHealth, "Fully occluded target must remain blocked");
+        }
+
+        private static void ArmorEdgeSlightlyAbove()
+        {
+            var g = Flat();
+            var e = Target(g, EnemyKind.Bristleback, 1.3f);
+            // Place puma slightly above the front face mid-line while still overlapping horizontally.
+            g.Player.Reset(new V2(0, .35f));
+            Tick(g, 2);
+            Swing(g);
+            Check(e.Health == e.MaxHealth, "Front armor must hold when slightly above the front face");
+        }
+
+        private static void NoDoubleHitClawAndBody()
+        {
+            var g = Flat();
+            var e = Target(g, EnemyKind.ReedSpitter, .9f);
+            // Start a descending claw that will also overlap as a body hit.
+            g.Player.Reset(new V2(0, 1.8f));
+            g.Player.Velocity = new V2(4, -8);
+            int startHealth = e.Health;
+            Tick(g, 20, new PlayerInput { AttackPressed = true, AimY = -1 });
+            // At most the claw damage (1 for down rake) should apply once; never claw+body stack.
+            Check(e.Health >= startHealth - 1, "Claw and body hit stacked on the same enemy");
+            Check(e.Health < startHealth, "Expected a single confirmed hit");
         }
     }
 }

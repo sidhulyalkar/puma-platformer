@@ -5,6 +5,7 @@ namespace Wildbound.Core
 {
     public enum EnemyKind { ClawPost, MossHare, Thornling, Bristleback, ReedSpitter, LanternMoth }
     public enum EnemyPhase { Idle, Tell, Active, Recover, Stunned, Defeated }
+    public enum BloomKind { Standard, Updraft, WideDazzle, Vine }
 
     public sealed class Projectile
     {
@@ -17,11 +18,31 @@ namespace Wildbound.Core
     public sealed class Moonbloom
     {
         public readonly V2 Position;
+        public readonly BloomKind Kind;
         public bool Awakened;
         public float GlowTime;
         public int LastAttack = -1;
-        public Moonbloom(float x, float y) { Position = new V2(x, y); }
+
+        public Moonbloom(float x, float y, BloomKind kind = BloomKind.Standard)
+        {
+            Position = new V2(x, y);
+            Kind = kind;
+        }
+
         public Box Bounds { get { return new Box(Position.X - .4f, Position.Y - .4f, .8f, .8f); } }
+
+        public float DazzleRadius { get { return Kind == BloomKind.WideDazzle ? 8f : 5f; } }
+        public float DazzleStun { get { return Kind == BloomKind.WideDazzle ? 1.6f : 1.2f; } }
+        public float UpdraftRadius { get { return 2.4f; } }
+        public float UpdraftAccel { get { return Kind == BloomKind.Updraft ? 18f : 0f; } }
+
+        public V2 SampleUpdraft(V2 point)
+        {
+            if (Kind != BloomKind.Updraft || GlowTime <= 0) return new V2();
+            if ((point - Position).Length > UpdraftRadius) return new V2();
+            float t = 1f - (point - Position).Length / UpdraftRadius;
+            return new V2(0, UpdraftAccel * Math.Max(0, t));
+        }
     }
 
     public sealed class Enemy
@@ -197,7 +218,6 @@ namespace Wildbound.Core
             else if (Phase == EnemyPhase.Recover)
             {
                 V2 toHome = Home - Position;
-                // Retreat still collides with terrain. After a blocked retreat, wait before resetting.
                 WorldCollision.MoveEnemy(world, this, toHome * Math.Min(1, dt * 3));
                 if (toHome.Length < .1f || PhaseTime > 2.5f)
                 { Position = Home; ChangePhase(EnemyPhase.Idle); Cooldown = 1; }
