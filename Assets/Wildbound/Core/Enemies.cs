@@ -5,7 +5,7 @@ namespace Wildbound.Core
 {
     public enum EnemyKind { ClawPost, MossHare, Thornling, Bristleback, ReedSpitter, LanternMoth }
     public enum EnemyPhase { Idle, Tell, Active, Recover, Stunned, Defeated }
-    public enum BloomKind { Standard, Updraft, WideDazzle }
+    public enum BloomKind { Standard, Updraft, WideDazzle, Vine }
 
     public sealed class Projectile
     {
@@ -40,7 +40,6 @@ namespace Wildbound.Core
         {
             if (Kind != BloomKind.Updraft || GlowTime <= 0) return new V2();
             if ((point - Position).Length > UpdraftRadius) return new V2();
-            // Stronger near center; pure vertical lift.
             float t = 1f - (point - Position).Length / UpdraftRadius;
             return new V2(0, UpdraftAccel * Math.Max(0, t));
         }
