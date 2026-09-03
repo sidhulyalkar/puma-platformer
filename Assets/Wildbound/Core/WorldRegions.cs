@@ -54,13 +54,15 @@ namespace Wildbound.Core
             w.Add(33, 21, 7, .7f, Surface.Stone);
             w.Add(49, 4, 5); w.Add(58, 8, 4); w.Add(64, 12, 7);
             w.Add(18, 1, 1, 4, Surface.Stone); w.Add(29, 6, 1, 6, Surface.Stone);
+            // Climbable bark faces — optional vertical route (claw-climb budget limited).
+            w.Add(18.9f, 1, .45f, 7.5f, Surface.Bark);
+            w.Add(28.1f, 6, .45f, 8f, Surface.Bark);
             w.Add(54, 1.75f, 3, 1.1f, Surface.Stone);
             w.Hazards.Add(new Box(39, 1, 2, .4f));
             w.Enemies.Add(new Enemy(EnemyKind.LanternMoth, 20, 11, 1));
             w.Enemies.Add(new Enemy(EnemyKind.LanternMoth, 47.5f, 5.5f, 1));
             w.Enemies.Add(new Enemy(EnemyKind.ReedSpitter, 63, 1));
             w.Blooms.Add(new Moonbloom(9.5f, 1.6f, BloomKind.Vine)); w.Blooms.Add(new Moonbloom(47.5f, 1.6f));
-            // Timed vine steps (thickness >= MinSolidThickness); only solid while vine bloom glows.
             w.Platforms.Add(new Platform(new Box(10.2f, 2.2f, 1.2f, .35f), Surface.Vine) { LightSource = 0, Enabled = false });
             w.Platforms.Add(new Platform(new Box(11.5f, 3.8f, 1.2f, .35f), Surface.Vine) { LightSource = 0, Enabled = false });
             w.Platforms.Add(new Platform(new Box(12.8f, 5.4f, 1.2f, .35f), Surface.Vine) { LightSource = 0, Enabled = false });
@@ -78,7 +80,7 @@ namespace Wildbound.Core
             PickupsAt(w, new V2(37, 22.9f), new V2(7, 2.1f), new V2(14, 4.8f), new V2(22, 7.8f),
                 new V2(15, 10.8f), new V2(25, 13.8f), new V2(34, 16.8f), new V2(25, 19.8f), new V2(44, 16.1f),
                 new V2(51, 6.1f), new V2(56, 7.6f), new V2(60, 10.1f), new V2(68, 14.1f));
-            w.Signs.Add(new Sign(9, 1, "LIGHT BELOW STONE", "Claw the blue flower to wake a crossing. The lower trail stays open; lantern shelves climb toward a hidden roost."));
+            w.Signs.Add(new Sign(9, 1, "LIGHT BELOW STONE", "Claw the blue flower to wake a crossing. Bark faces hold claws for a short climb. The lower trail stays open."));
             w.Signs.Add(new Sign(22, 6.7f, "TURN WITH THE TRAIL", "The next shelf is behind you. Face left, aim up, and release a charged pounce. Faint tracks mark the resting places."));
             w.Signs.Add(new Sign(47, 1, "A FLOWER AGAINST THE DIVE", "Claw the moonbloom as the moth marks its dive. The flare interrupts it and lights the crossing above."));
             w.Signs.Add(new Sign(53, 1, "STONE MAKES GOOD COVER", "Roll beneath the low arch, or climb over it. The spitter commits to three seeds; close while it recovers."));
