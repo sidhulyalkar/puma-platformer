@@ -17,6 +17,21 @@ namespace Wildbound.Core
             return true;
         }
 
+        /// <summary>
+        /// Multi-point line-of-sight for combat strikes.
+        /// Samples center + upper/lower thirds of the strike box toward the target center.
+        /// A strike is valid if any sample is unobstructed (thin pillars no longer false-block silhouette hits).
+        /// </summary>
+        public static bool StrikeClear(WorldDefinition world, Box strike, V2 targetCenter)
+        {
+            V2 c = strike.Center;
+            V2 upper = new V2(c.X, strike.Y + strike.H * .75f);
+            V2 lower = new V2(c.X, strike.Y + strike.H * .25f);
+            return ClearLine(world, c, targetCenter)
+                || ClearLine(world, upper, targetCenter)
+                || ClearLine(world, lower, targetCenter);
+        }
+
         public static bool SegmentHits(V2 from, V2 to, Box box)
         {
             float fraction;
