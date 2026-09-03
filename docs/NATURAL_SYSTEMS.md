@@ -1,8 +1,5 @@
 # Natural Systems: light, scent, wind, growth
 
-The world should feel like a living night rather than a set of abstract video-game switches.  
-All new interactions must remain readable, optional where possible, and compatible with the existing rectangular collision solver and 120 Hz simulation.
-
 ## Design Rules
 
 1. **Readable first** — every natural reaction has a clear visual + audio cue.
@@ -11,47 +8,32 @@ All new interactions must remain readable, optional where possible, and compatib
 4. **Optional depth** — main exits stay open; natural systems enrich scenic routes and trials.
 5. **Deterministic** — every interaction must be regression-testable.
 
-## Current Systems (v0.5)
+## Current Systems (v0.5+)
 
 | System | Behavior | Persistence |
 | --- | --- | --- |
 | Moonbloom / Moonwake | Claw activates 6 s flare + lasting bridge for the visit | Temporary unless waystone restored |
-| Scent rings (tracks) | Visible only while stalking, line-of-sight, local | Transient |
-| **Hare scent marks** | Defeated moss hares drop a short-lived mark | ~4.5 s; visit-local |
-| Wind perch (trial) | Horizontal drift + balance charge while centered & stalking | Attunement survives fall inside trial |
-| **Wind fields (Sky Garden)** | Bounded ribbons add velocity while overlapping | Authored; optional routes |
-| Moonbell | Downward rake rebound + traversal refresh | Cooldown |
-| Spring flower | Upward launch + pounce/air-dash refresh | Always |
-| Golden discovery paths | Opened by reaching a wild place | Saved |
-| **Memory vignettes** | Discovery / memory pickup sets `LastVignette` | Display timer; Unity presents UI |
+| **Updraft bloom** | While glowing, soft vertical lift in radius | Timed with GlowTime |
+| **Wide-dazzle bloom** | Larger moth interrupt radius + longer stun | On activation |
+| Scent rings / hare marks | Stalking + LOS | Transient |
+| Wind fields (Sky Garden) | Bounded additive velocity | Authored |
+| Memory vignettes | Discovery / memory pickup payload | Display timer |
+| Springs, moonbell, golden paths | As before | — |
 
-## Wind fields
+## Bloom variants
 
-- `WindField(bounds, velocity)` stored on `WorldDefinition.WindFields`.
-- `NaturalSystems.SampleWind` sums all overlapping fields at a point.
-- `GameSession` adds `wind * dt` to the motion delta every step (alongside trial perch wind).
-- Sky Garden ships two mild ribbons on upper shelves; the ground exit path does not require them.
-- Strength stays low so TraverseWorlds / main-route regressions remain stable.
+`BloomKind`: `Standard` | `Updraft` | `WideDazzle`
 
-## Memory vignettes
+- **Standard** — bridge enable + moth stun within 5 units for 1.2 s.
+- **Updraft** — same + while `GlowTime > 0`, `SampleUpdraft` applies vertical accel (stronger near center, radius 2.4). Does **not** grant free flight; limited by glow duration.
+- **WideDazzle** — moth stun within 8 units for 1.6 s.
 
-- `WildPlace.MemoryTitle` + `ToVignette(biome)` produce title / body / beat.
-- Memory pickups use `MemoryDescriptor.ForBiome` + world `Memory` line.
-- `GameSession.LastVignette` + `VignetteTime` are the simulation contract for Unity UI.
-- Never gates progress.
+Authored placement:
+- Amber Canopy second bloom → Updraft
+- Sky Garden second bloom → WideDazzle
 
-## Hare scent marks
+## Later
 
-- On `GameEvent.Hunt`, drop a `ScentMark` at the impact point.
-- Cap 16 marks; life ~4.5 s; advanced each tick.
-- Visible with the same stalking + LOS rules as discovery tracks.
-
-## Later expansions
-
-- Bloom variants (updraft / vine / wide dazzle)
-- Light-reactive soft platforms
+- Vine bloom (temporary climbable AABB for GlowTime only)
+- Soft platforms from dazzled moths
 - Moon-phase ambient after three waystones
-
-## Testing contract
-
-Any new natural system ships with at least one deterministic regression that activates and uses it.

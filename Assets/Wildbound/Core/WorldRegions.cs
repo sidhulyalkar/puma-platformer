@@ -16,7 +16,6 @@ namespace Wildbound.Core
         {
             w.CameraMaxY = 18; w.MapBounds = new Box(-6, -3, 88, 24);
             w.Add(-5, -3, 40, 4); w.Add(38, -3, 43, 4);
-            // The hollow is a real low passage, with a standing approach at both ends.
             w.Add(12, 1.75f, 8, 1.2f); w.Add(9, 3, 3, .7f);
             w.Add(23, 4.2f, 4); w.Add(29, 7.1f, 5); w.Add(37, 10.1f, 6);
             w.Add(39, 1, 2, .35f, Surface.Spring); w.Add(43, 5.7f, 4, .7f);
@@ -24,7 +23,7 @@ namespace Wildbound.Core
             w.Enemies.Add(new Enemy(EnemyKind.Thornling, 27, 1, 1.2f));
             w.Enemies.Add(new Enemy(EnemyKind.Bristleback, 71, 1, 2));
             w.Enemies.Add(new Enemy(EnemyKind.ReedSpitter, 55, 5));
-            w.Blooms.Add(new Moonbloom(21, 1.6f)); w.Blooms.Add(new Moonbloom(47.5f, 1.6f));
+            w.Blooms.Add(new Moonbloom(21, 1.6f)); w.Blooms.Add(new Moonbloom(47.5f, 1.6f, BloomKind.Updraft));
             Moonpath(w, 0, 26, 6.4f, 3); Moonpath(w, 1, 45, 8.8f, 4);
             ReturnPath(w, WildPlaceId.RootHollow, 35, 2.5f, 3);
             ReturnPath(w, WildPlaceId.AmberOverlook, 30, 10.3f, 7);
@@ -49,7 +48,6 @@ namespace Wildbound.Core
         {
             w.CameraMaxY = 26; w.MapBounds = new Box(-6, -3, 88, 34);
             w.Add(-5, -3, 86, 4); w.Add(-5, 29, 86, 2, Surface.Stone);
-            // Switchback shelves form one vertical landmark above a safe lower trail.
             w.Add(11, 3, 5, .7f, Surface.Stone); w.Add(20, 6, 5, .7f, Surface.Stone);
             w.Add(12, 9, 6, .7f, Surface.Stone); w.Add(22, 12, 6, .7f, Surface.Stone);
             w.Add(31, 15, 6, .7f, Surface.Stone); w.Add(23, 18, 5, .7f, Surface.Stone);
@@ -89,7 +87,6 @@ namespace Wildbound.Core
             w.Add(46, -3, 7, 4); w.Add(57, -3, 24, 4);
             w.Add(10, 1, 2, .35f, Surface.Spring); w.Add(34, 1, 2, .35f, Surface.Spring);
             w.Add(60.5f, 1, 1.5f, .35f, Surface.Spring);
-            // Mild wind ribbons (optional vertical routes). Not required for the main exit path.
             w.WindFields.Add(new WindField(18, 6, 14, 5, 2.2f, 0.4f, "sky-ribbon-east"));
             w.WindFields.Add(new WindField(40, 14, 16, 6, -1.5f, 0.6f, "sky-ribbon-west"));
             w.Add(15, 5, 5, .7f); w.Add(24, 9, 6, .7f); w.Add(35, 13, 6, .7f);
@@ -99,7 +96,7 @@ namespace Wildbound.Core
             w.Enemies.Add(new Enemy(EnemyKind.LanternMoth, 42, 18, 1));
             w.Enemies.Add(new Enemy(EnemyKind.LanternMoth, 47.5f, 5.5f, 1));
             w.Enemies.Add(new Enemy(EnemyKind.ReedSpitter, 68, 6));
-            w.Blooms.Add(new Moonbloom(14, 1.6f)); w.Blooms.Add(new Moonbloom(47.5f, 1.6f));
+            w.Blooms.Add(new Moonbloom(14, 1.6f)); w.Blooms.Add(new Moonbloom(47.5f, 1.6f, BloomKind.WideDazzle));
             Moonpath(w, 0, 18, 3.5f, 3); Moonpath(w, 1, 42, 12, 4);
             ReturnPath(w, WildPlaceId.CloudNest, 30, 11.5f, 5);
             ReturnPath(w, WildPlaceId.StarflowerCrown, 64, 18.5f, 5);

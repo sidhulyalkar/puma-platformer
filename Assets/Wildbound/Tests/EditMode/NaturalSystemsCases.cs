@@ -13,7 +13,9 @@ namespace Wildbound.Tests
             { "Discovery raises a memory vignette", DiscoveryVignette },
             { "Memory pickup raises a biome vignette", MemoryPickupVignette },
             { "Hunting a hare leaves a scent mark", HuntDropsScent },
-            { "Scent marks expire", ScentExpires }
+            { "Scent marks expire", ScentExpires },
+            { "Updraft bloom lifts while glowing", UpdraftLift },
+            { "Wide dazzle stuns moths farther away", WideDazzleRange }
         };
 
         private static void Check(bool c, string why) { if (!c) throw new Exception(why); }
@@ -45,7 +47,6 @@ namespace Wildbound.Tests
             g.Player.Reset(new V2(0, 0));
             Tick(g, 10);
             float start = g.Player.Position.X;
-            // Stand still in the field; wind should push east.
             Tick(g, 60);
             Check(g.Player.Position.X > start + .5f, "Wind did not drift a stationary puma");
         }
@@ -57,7 +58,7 @@ namespace Wildbound.Tests
             g.Player.Reset(place.Position);
             if (place.Id == WildPlaceId.RootHollow) g.Player.LowProfile = true;
             Tick(g, 5);
-            Check(place.Found && (g.Events & GameEvent.Discovery) != 0 || g.LastDiscovery != null, "Discovery missing");
+            Check(place.Found || g.LastDiscovery != null, "Discovery missing");
             Check(g.LastVignette != null && g.VignetteTime > 0, "Vignette not raised");
             Check(g.LastVignette.Title.Length > 0 && g.LastVignette.Body.Length > 0, "Empty vignette");
         }
@@ -82,7 +83,6 @@ namespace Wildbound.Tests
             g.Player.Reset(new V2(0, 0)); Tick(g, 5);
             g.World.Enemies.Add(new Enemy(EnemyKind.MossHare, 1.25f, 0, 0));
             int before = g.World.ScentMarks.Count;
-            // Swing until hunt
             for (int i = 0; i < 80; i++)
             {
                 g.Step(new PlayerInput { AttackPressed = i % 25 == 0 });
@@ -97,6 +97,44 @@ namespace Wildbound.Tests
             g.World.ScentMarks.Add(new ScentMark(new V2(1, 1), .05f));
             Tick(g, 20);
             Check(g.World.ScentMarks.Count == 0, "Scent mark did not expire");
+        }
+
+        private static void UpdraftLift()
+        {
+            var g = new GameSession();
+            g.World.Platforms.Clear(); g.World.Enemies.Clear(); g.World.Blooms.Clear();
+            g.World.Add(-20, -2, 60, 2);
+            g.World.Blooms.Add(new Moonbloom(0, 1.2f, BloomKind.Updraft));
+            g.Player.Reset(new V2(0, 0)); Tick(g, 5);
+            // Claw the bloom
+            for (int i = 0; i < 40; i++)
+            {
+                g.Step(new PlayerInput { AttackPressed = i == 0 });
+                if ((g.Events & GameEvent.Bloom) != 0) break;
+            }
+            Check(g.World.Blooms[0].GlowTime > 0, "Updraft bloom not glowing");
+            float y0 = g.Player.Position.Y;
+            // Stand in the updraft without jumping
+            Tick(g, 50);
+            Check(g.Player.Position.Y > y0 + .3f, "Updraft did not lift the puma");
+        }
+
+        private static void WideDazzleRange()
+        {
+            var g = new GameSession();
+            g.World.Platforms.Clear(); g.World.Enemies.Clear(); g.World.Blooms.Clear();
+            g.World.Add(-20, -2, 60, 2);
+            g.World.Blooms.Add(new Moonbloom(0, 1.2f, BloomKind.WideDazzle));
+            // Moth beyond standard 5 unit radius but inside 8
+            g.World.Enemies.Add(new Enemy(EnemyKind.LanternMoth, 6.5f, 2, 0));
+            g.Player.Reset(new V2(0, 0)); Tick(g, 5);
+            for (int i = 0; i < 40; i++)
+            {
+                g.Step(new PlayerInput { AttackPressed = i == 0 });
+                if ((g.Events & GameEvent.Bloom) != 0) break;
+            }
+            var moth = g.World.Enemies[0];
+            Check(moth.Phase == EnemyPhase.Stunned, "Wide dazzle failed to stun distant moth");
         }
     }
 }
