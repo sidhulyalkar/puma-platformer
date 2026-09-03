@@ -157,8 +157,8 @@ namespace Wildbound.Core
             bool wasGrounded = Player.Grounded;
             V2 delta = Player.Velocity * dt;
             if (InTrial) delta.X += World.Trial.WindDrift(Player, Time) * dt;
-            // Substeps bound travel below the thinnest authored collider, including fast pounces.
-            int steps = Math.Max(1, (int)Math.Ceiling(Math.Max(Math.Abs(delta.X), Math.Abs(delta.Y)) / .12f));
+            // Substeps bound travel below the thinnest authored collider (see docs/CCD.md).
+            int steps = Math.Max(1, (int)Math.Ceiling(Math.Max(Math.Abs(delta.X), Math.Abs(delta.Y)) / WorldCollision.MaxSubstep));
             Player.Grounded = false; Player.GroundIndex = -1;
             for (int i = 0; i < steps; i++)
             {
@@ -181,7 +181,6 @@ namespace Wildbound.Core
             for (int i = Projectiles.Count - 1; i >= 0; i--)
             {
                 var shot = Projectiles[i]; V2 next = shot.Position + shot.Velocity * dt; shot.Life -= dt;
-                // Resolve the nearest intersection; a wall behind the player is not a shield.
                 float wallFraction = float.PositiveInfinity;
                 foreach (var platform in World.Platforms)
                 {
@@ -217,7 +216,7 @@ namespace Wildbound.Core
                         }
                     }
                 }
-                return; // Trial progress must never overwrite the outside world's pickup/checkpoint IDs.
+                return;
             }
             foreach (var place in World.Places)
                 if (!place.Found && place.Reached(Player))
@@ -243,14 +242,9 @@ namespace Wildbound.Core
             }
         }
 
-        /// <summary>
-        /// Automatic mantle when the puma rises into a clear ledge lip.
-        /// Keeps the main path readable and recovers near-miss vertical approaches (Silksong/Ori-style forgiveness).
-        /// </summary>
         private void TryMantle()
         {
             if (Player.Mantling || Player.Grounded || Player.LowProfile || Player.RollTime > 0 || Player.DashTime > 0) return;
-            // Prefer rising or near-apex approaches so falling past a ledge does not auto-grab.
             if (Player.Velocity.Y < -2f) return;
 
             float targetY;
@@ -258,7 +252,6 @@ namespace Wildbound.Core
             if (!WorldCollision.TryFindLedge(World, Player, out targetY, out index)) return;
             if (!Player.TryStartMantle()) return;
 
-            // Snap horizontally toward the ledge center of mass while the locked rise begins.
             var ledge = World.Platforms[index].Bounds;
             float standX = Player.Facing > 0 ? ledge.X + .4f : ledge.Right - .4f;
             Player.Position = new V2(standX, Math.Min(Player.Position.Y, targetY - .05f));
