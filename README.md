@@ -4,7 +4,7 @@
 
 A Unity 2D exploration platformer about a female puma hunting beneath the moon. Stalk a moss hare, turn a pounce into a claw strike, read a bristleback's charge, and wake a hidden bridge with a moonbloom. Follow the trail from a nocturnal forest through a lantern grotto to a floating sky garden. The main trail stays open; the scenic route asks more of your paws.
 
-This repository contains **v0.4: Living Trails**, written for **Unity 6000.3.22f1**. The gameplay simulation has executable regression coverage. **Unity import, rendering, editor playtesting, and WebGL execution still need verification.** No browser release is published yet.
+This repository contains **v0.5: First Paws**, written for **Unity 6000.3.22f1**. It builds on Living Trails with optional practice notes and clearer guidance through the existing worlds. The gameplay simulation has executable regression coverage. **Unity import, rendering, editor playtesting, and WebGL execution still need verification.** No browser release is published yet.
 
 ## Play in Unity
 
@@ -24,6 +24,7 @@ The opening scene builds its own world, camera, puma, interface, and audio. No a
 | Sky Garden | Spring approaches, upper islands, and a moving perch | Cloud Nest and Starflower Crown |
 
 - **Six wild places:** follow physical pawprints and nearby scent clues, discover hollows and high perches, and open golden return paths that survive falls and reloads. Shelter stars remember collected memories.
+- **First Paws:** nearby hints acknowledge actions you actually perform, then retire. A missed claw or canceled coil does not count. **C → Practice notes** remembers nine actions across falls and reloads; all abilities and routes remain available from the start. The objective card points toward the main arch, with optional trial directions when you approach its crescent.
 - Accelerated movement, variable jump height, coyote time, and buffered jumps.
 - **Charged pounce:** hold to coil; release for an arcing leap. Charge changes range; up/down changes the angle. One aerial pounce until you land or touch a spring flower.
 - Wall slides and wall kicks, with a brief steering lock so the kick actually clears the wall.
@@ -34,6 +35,7 @@ The opening scene builds its own world, camera, puma, interface, and audio. No a
 - Moving platforms, spring flowers, five-heart vitality, and quick checkpoint recovery. Discovered checkpoints fully heal; falling preserves collectibles.
 - Twelve light motes and one hidden memory per region. **Discoveries are optional and survive falls.**
 - Local saves, a trail map with return travel to discovered worlds, a clean title screen, contextual lessons, gamepad input, mute, and reduced-motion options.
+- Menus remember where you opened them: a guide opened from Pause returns to Pause. Switching away from the app keeps play paused. Starting over requires an explicit **Start fresh** dialog; canceling retains your journey.
 - Original procedural cut-paper scenery, an articulated quadruped puma, pooled particles, and synthesized sound cues.
 
 ## Restore the Moontrail
@@ -79,9 +81,9 @@ dotnet run --project tests/Wildbound.Tests.csproj --configuration Release
 python3 tools/validate_project.py
 ```
 
-**112 regression cases** cover movement, combat timing, enemy patterns, armor, projectile collision ordering, low-ceiling rolls, hunting rewards, moonblooms, saves, and actual input-driven routes to all three exits. They include three complete trial routes, all six wild places and three memories through actual input with a return to shelter, the grotto roll alternative, and 99,000 seeded movement/combat/trial stress steps. CI also parses every Unity C# source for syntax; a pinned .NET 8 SDK keeps the checks consistent. The GitHub Actions workflow runs both commands. These are simulation and structural checks, not a substitute for Unity runtime qualification.
+**152 regression cases** cover movement, combat timing, enemy patterns, armor, projectile collision ordering, low-ceiling rolls, hunting rewards, moonblooms, saves, and actual input-driven routes to all three exits. They include three complete trial routes, all six wild places and three memories through actual input with a return to shelter, the grotto roll alternative, and 99,000 seeded movement/combat/trial stress steps. Twenty-one practice cases check real-action recognition, rejected inputs, hint visibility, persistence, optional objectives, and the opening route with wildlife active. Nineteen menu cases cover reset confirmation, pause/focus behavior, ending recovery, map/trial returns, and 5,000 seeded navigation steps. CI also parses every Unity C# source for syntax; a pinned .NET 8 SDK keeps the checks consistent. The GitHub Actions workflow runs both commands. These are simulation and structural checks, not a substitute for Unity runtime qualification.
 
-Run the same cases in **Window → General → Test Runner → EditMode**. On macOS, the command-line equivalents are:
+Run the same cases plus two Unity JSON compatibility tests in **Window → General → Test Runner → EditMode**. PlayMode includes scene-construction and host-menu smoke tests. The Unity-only tests are supplied but have not been executed here. On macOS, the command-line equivalents are:
 
 ```bash
 export UNITY_EDITOR="/Applications/Unity/Hub/Editor/6000.3.22f1/Unity.app/Contents/MacOS/Unity"
@@ -107,6 +109,7 @@ Open `http://localhost:8000`. The eventual `sidhulyalkar.com` arcade can embed t
 ## Development notes
 
 - [Living Trails: regions, discoveries, and route schematics](docs/LIVING_TRAILS.md)
+- [First Paws: practice rules and focused playtest](docs/FIRST_PAWS.md)
 - [Design direction and next milestones](docs/DESIGN.md)
 - [Moontrail objectives, strategies, and room maps](docs/MOONTRAIL.md)
 - [Night Hunt moves, enemies, and light rules](docs/NIGHT_HUNT.md)

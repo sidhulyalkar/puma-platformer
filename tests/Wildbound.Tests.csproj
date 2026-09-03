@@ -10,5 +10,7 @@
     <Compile Include="../Assets/Wildbound/Tests/EditMode/CombatCases.cs" />
     <Compile Include="../Assets/Wildbound/Tests/EditMode/MoontrailCases.cs" />
     <Compile Include="../Assets/Wildbound/Tests/EditMode/ExplorationCases.cs" />
+    <Compile Include="../Assets/Wildbound/Tests/EditMode/PracticeCases.cs" />
+    <Compile Include="../Assets/Wildbound/Tests/EditMode/JourneyFlowCases.cs" />
   </ItemGroup>
 </Project>

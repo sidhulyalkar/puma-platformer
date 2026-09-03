@@ -4,7 +4,7 @@ The fantasy is a curious, powerful female puma in a world worth exploring. Movem
 
 The nocturnal setting is part of play. Warm fur and pale terrain edges identify the puma and safe landings. Amber warnings identify committed attacks. Blue moonblooms react to her claws, revealing bridges and interrupting moths. Darkness supplies atmosphere without requiring players to navigate invisible hazards.
 
-## Implemented in v0.4
+## Implemented through v0.5
 
 Three separately authored outside regions now combine a root-and-branch loop, a tall lantern chamber, and a chain of sky islands. Six wild places reward local scent tracking with lasting golden return paths. Their discoveries and the existing memory pickups give optional routes concrete destinations. The Waystone Trials retain their separately authored objective rooms and blue-bridge rewards. See [Living Trails](LIVING_TRAILS.md) and [Moontrail strategy](MOONTRAIL.md).
 
@@ -37,7 +37,7 @@ These are starting values, not playtest-proven tuning. See [Night Hunt](NIGHT_HU
 6. Reed spitters teach cover and volley timing; the final bristleback teaches jumping above armor or rolling behind a committed charge.
 7. An arch introduces intentional world travel. The map allows return visits with collectible progress intact.
 
-Movement tutorial text remains proximity-based. The trial objective card and journal now confirm actual mechanism activation, rather than simply displaying the same lesson forever. The field guide carries a lot of new actions; an input-aware teaching sequence should replace that burden after first-time playtests.
+First Paws replaces selected introductory signs with local practice hints. Successful actions mark persistent notes: a claw must connect, a pounce must launch, and scent must actually reveal an undiscovered trail. Known lessons retire while shelter and route signs remain. A low ceiling takes priority with a crawl-clear reminder. Practice is optional and can be attempted outside its suggested location; it never unlocks or blocks movement, combat, or travel. The HUD and map target the main arch outside trials, while trial guidance continues to follow mechanisms. These teaching changes are simulation-tested but still require first-time human playtesting; they do not establish mastery or a finished tutorial.
 
 ## Design boundaries and next milestones
 

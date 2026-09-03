@@ -6,16 +6,17 @@ namespace Wildbound.Core
     [Serializable]
     public sealed class JourneySave
     {
-        public int Version = 1, Biome, FurthestBiome, Waystones, Discoveries;
+        public int Version = 1, Biome, FurthestBiome, Waystones, Discoveries, Practiced;
         public int[] Collected = new int[3], Checkpoints = { -1, -1, -1 };
         public bool Completed;
         public void Sanitize()
         {
-            if (Version != 1) { Biome = FurthestBiome = Waystones = Discoveries = 0; Collected = new int[3]; Checkpoints = new[] { -1, -1, -1 }; Completed = false; }
+            if (Version != 1) { Biome = FurthestBiome = Waystones = Discoveries = Practiced = 0; Collected = new int[3]; Checkpoints = new[] { -1, -1, -1 }; Completed = false; }
             Version = 1; Biome = Math.Max(0, Math.Min(2, Biome));
             FurthestBiome = Math.Max(Biome, Math.Max(0, Math.Min(2, FurthestBiome)));
             Waystones = Waystones < 0 ? 0 : Waystones & 7;
             Discoveries = Discoveries < 0 ? 0 : Discoveries & 63;
+            Practiced = Practiced < 0 ? 0 : Practiced & PracticeGuide.AllSkills;
             if (Collected == null || Collected.Length != 3) Collected = new int[3];
             if (Checkpoints == null || Checkpoints.Length != 3) Checkpoints = new[] { -1, -1, -1 };
             for (int i = 0; i < 3; i++) { Collected[i] &= (1 << 13) - 1; Checkpoints[i] = Math.Max(-1, Math.Min(1, Checkpoints[i])); }
@@ -37,6 +38,7 @@ namespace Wildbound.Core
         public float Recovery { get; private set; }
         public bool Paused;
         public WildPlace LastDiscovery { get; private set; }
+        public PracticeGuide Practice { get; private set; } = new PracticeGuide();
         public int DiscoveryCount
         {
             get { int n = 0; for (int i = 0; i < 6; i++) if ((Save.Discoveries & (1 << i)) != 0) n++; return n; }
@@ -53,6 +55,7 @@ namespace Wildbound.Core
         }
         public void LoadWorld(int biome)
         {
+            Practice.ClearNotice();
             outsideWorld = null;
             World = WorldDefinition.Create(biome); Save.Biome = biome; Save.FurthestBiome = Math.Max(Save.FurthestBiome, biome); Time = Recovery = 0;
             for (int i = 0; i < World.Pickups.Count; i++) World.Pickups[i].Collected = (Save.Collected[biome] & (1 << i)) != 0;
@@ -71,6 +74,7 @@ namespace Wildbound.Core
         public bool TryEnterTrial()
         {
             if (InTrial || Paused || Recovery > 0 || !Player.Grounded || (Player.Position - Moontrial.Entrance).Length > 1.6f) return false;
+            Practice.ClearNotice();
             outsideWorld = World; outsidePosition = Player.Position; outsideTime = Time;
             World = Moontrial.Create(Save.Biome); Time = Recovery = 0;
             Player.Reset(World.Spawn); Combat.ResetForRespawn(); Projectiles.Clear();
@@ -79,6 +83,7 @@ namespace Wildbound.Core
         public bool LeaveTrial()
         {
             if (!InTrial || outsideWorld == null) return false;
+            Practice.ClearNotice();
             World = outsideWorld; outsideWorld = null; Time = outsideTime; Recovery = 0;
             Player.Reset(outsidePosition); Combat.ResetForRespawn(); Projectiles.Clear();
             RestoreLightBridges(); Events |= GameEvent.TrialTravel; return true;
@@ -96,6 +101,7 @@ namespace Wildbound.Core
         }
         public void Respawn()
         {
+            Practice.ClearNotice();
             Player.Reset(CheckpointPosition()); Combat.ResetForRespawn(); Projectiles.Clear();
             foreach (var enemy in World.Enemies) enemy.ReturnHome();
             if (InTrial && World.Trial.Balance != null && !World.Trial.Balance.Attuned) World.Trial.Balance.Charge = 0;
@@ -115,8 +121,10 @@ namespace Wildbound.Core
             Sign result = null; float best = 3.4f;
             foreach (var sign in World.Signs)
             {
+                if (sign.Skills != PracticeSkill.None && PracticeGuide.Has(Save, sign.Skills)) continue;
                 float d = (Player.Position - sign.Position).Length;
-                if (d < best) { best = d; result = sign; }
+                if (d < best && WorldCollision.ClearLine(World, Player.Bounds.Center, sign.Position + new V2(0, .5f)))
+                { best = d; result = sign; }
             }
             return result;
         }
@@ -141,6 +149,11 @@ namespace Wildbound.Core
             if (!Scalar.Finite(input.Move) || !Scalar.Finite(input.AimY)) throw new ArgumentException("Input must be finite.");
             if (Paused) return;
             if (Recovery > 0) { Recovery = Math.Max(0, Recovery - dt); return; }
+            Advance(input, dt);
+            if (Practice.Observe(this, dt)) Events |= GameEvent.Practice;
+        }
+        private void Advance(PlayerInput input, float dt)
+        {
             Time += dt;
             foreach (var platform in World.Platforms) platform.Update(Time);
             foreach (var bloom in World.Blooms) bloom.GlowTime = Math.Max(0, bloom.GlowTime - dt);

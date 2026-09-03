@@ -179,6 +179,8 @@ namespace Wildbound.Core
                 events |= mechanism;
                 if (mechanism != GameEvent.None) LastImpact = world.Trial.LastImpact;
             }
+            if (Move != ClawMove.DashClaw && (events & (GameEvent.Hit | GameEvent.Bloom | GameEvent.Moonbell)) != 0)
+                events |= GameEvent.ClawHit;
             return events;
         }
 

@@ -39,9 +39,9 @@ namespace Wildbound.Core
             PickupsAt(w, new V2(41, 12.3f), new V2(7, 2.1f), new V2(10, 4.7f), new V2(16.5f, 1.45f),
                 new V2(24, 6.3f), new V2(31, 9.2f), new V2(36.5f, 3.8f), new V2(40, 2.5f), new V2(45, 7.5f),
                 new V2(46.5f, 10.2f), new V2(55, 6.1f), new V2(64, 4.8f), new V2(71, 7.3f));
-            w.Signs.Add(new Sign(10.5f, 1, "SMALL PATHS, SOFT PAWS", "Faint pawprints lead under the roots. Hold Q / LT to see nearby scent. L / B rolls low; keep moving to crawl clear."));
-            w.Signs.Add(new Sign(21, 1, "COIL INTO THE CANOPY", "Climb onto the roots from either end. Hold SHIFT / X, aim up, then release toward the branches. Claw blue flowers to wake crossings."));
-            w.Signs.Add(new Sign(39, 1, "BORROW A LITTLE SPRING", "A pink flower restores your pounce in midair. Follow the upper branches back toward the memory."));
+            w.Signs.Add(new Sign(10.5f, 1, "SMALL PATHS, SOFT PAWS", "Faint pawprints lead under the roots. Hold Q / LT to see nearby scent. L / B rolls low; keep moving to crawl clear.", PracticeSkill.Scent | PracticeSkill.Roll));
+            w.Signs.Add(new Sign(21, 1, "COIL INTO THE CANOPY", "Climb onto the roots from either end. Hold SHIFT / X, aim up, then release toward the branches. Claw blue flowers to wake crossings.", PracticeSkill.Pounce | PracticeSkill.Moonwake));
+            w.Signs.Add(new Sign(39, 1, "BORROW A LITTLE SPRING", "A pink flower restores your pounce in midair. Follow the upper branches back toward the memory.", PracticeSkill.Spring));
             w.Signs.Add(new Sign(68, 1, "LET HIM COMMIT", "The bristleback guards the clearing. Vault his charge, roll through at the right moment, or take the branches above."));
         }
 
@@ -76,7 +76,7 @@ namespace Wildbound.Core
             PickupsAt(w, new V2(37, 22.9f), new V2(7, 2.1f), new V2(14, 4.8f), new V2(22, 7.8f),
                 new V2(15, 10.8f), new V2(25, 13.8f), new V2(34, 16.8f), new V2(25, 19.8f), new V2(44, 16.1f),
                 new V2(51, 6.1f), new V2(56, 7.6f), new V2(60, 10.1f), new V2(68, 14.1f));
-            w.Signs.Add(new Sign(9, 1, "LIGHT BELOW STONE", "Claw the blue flower to wake a crossing. The lower trail stays open; lantern shelves climb toward a hidden roost."));
+            w.Signs.Add(new Sign(9, 1, "LIGHT BELOW STONE", "Claw the blue flower to wake a crossing. The lower trail stays open; lantern shelves climb toward a hidden roost.", PracticeSkill.Moonwake));
             w.Signs.Add(new Sign(22, 6.7f, "TURN WITH THE TRAIL", "The next shelf is behind you. Face left, aim up, and release a charged pounce. Faint tracks mark the resting places."));
             w.Signs.Add(new Sign(47, 1, "A FLOWER AGAINST THE DIVE", "Claw the moonbloom as the moth marks its dive. The flare interrupts it and lights the crossing above."));
             w.Signs.Add(new Sign(53, 1, "STONE MAKES GOOD COVER", "Roll beneath the low arch, or climb over it. The spitter commits to three seeds; close while it recovers."));
@@ -111,7 +111,7 @@ namespace Wildbound.Core
             PickupsAt(w, new V2(61, 22.9f), new V2(7, 2.1f), new V2(11, 2.5f), new V2(17, 6.8f),
                 new V2(26, 10.8f), new V2(32, 12.8f), new V2(38, 14.8f), new V2(48, 18.8f), new V2(53, 19.7f),
                 new V2(67, 19.8f), new V2(60, 2.1f), new V2(68, 7.1f), new V2(73, 2.1f));
-            w.Signs.Add(new Sign(9, 1, "BORROW THE SKY", "Jump onto a pink flower to launch and restore your pounce. Hold SHIFT / X in the air, aim up, and release toward the broad island."));
+            w.Signs.Add(new Sign(9, 1, "BORROW THE SKY", "Jump onto a pink flower to launch and restore your pounce. Hold SHIFT / X in the air, aim up, and release toward the broad island.", PracticeSkill.Spring));
             w.Signs.Add(new Sign(26, 9.7f, "A NEST BETWEEN LEAPS", "Land to refresh your pounce and dash. Follow the golden path; the crown waits above the moving perch."));
             w.Signs.Add(new Sign(47, 1, "LIGHT BELOW THE WINGS", "Claw the blue flower to interrupt the moth. The lower islands offer another route across the garden."));
         }
