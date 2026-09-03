@@ -59,7 +59,11 @@ namespace Wildbound.Core
             w.Enemies.Add(new Enemy(EnemyKind.LanternMoth, 20, 11, 1));
             w.Enemies.Add(new Enemy(EnemyKind.LanternMoth, 47.5f, 5.5f, 1));
             w.Enemies.Add(new Enemy(EnemyKind.ReedSpitter, 63, 1));
-            w.Blooms.Add(new Moonbloom(9.5f, 1.6f)); w.Blooms.Add(new Moonbloom(47.5f, 1.6f));
+            w.Blooms.Add(new Moonbloom(9.5f, 1.6f, BloomKind.Vine)); w.Blooms.Add(new Moonbloom(47.5f, 1.6f));
+            // Timed vine steps (thickness >= MinSolidThickness); only solid while vine bloom glows.
+            w.Platforms.Add(new Platform(new Box(10.2f, 2.2f, 1.2f, .35f), Surface.Vine) { LightSource = 0, Enabled = false });
+            w.Platforms.Add(new Platform(new Box(11.5f, 3.8f, 1.2f, .35f), Surface.Vine) { LightSource = 0, Enabled = false });
+            w.Platforms.Add(new Platform(new Box(12.8f, 5.4f, 1.2f, .35f), Surface.Vine) { LightSource = 0, Enabled = false });
             Moonpath(w, 0, 16, 7.5f, 4); Moonpath(w, 1, 54, 6.2f, 4);
             ReturnPath(w, WildPlaceId.StillwaterShelf, 17, 5.3f, 3);
             ReturnPath(w, WildPlaceId.LanternRoost, 40, 15, 7);
