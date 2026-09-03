@@ -15,7 +15,8 @@ namespace Wildbound.Tests
             { "Hunting a hare leaves a scent mark", HuntDropsScent },
             { "Scent marks expire", ScentExpires },
             { "Updraft bloom lifts while glowing", UpdraftLift },
-            { "Wide dazzle stuns moths farther away", WideDazzleRange }
+            { "Wide dazzle stuns moths farther away", WideDazzleRange },
+            { "Vine bloom enables timed platforms", VineBloomTimedPlatform }
         };
 
         private static void Check(bool c, string why) { if (!c) throw new Exception(why); }
@@ -106,7 +107,6 @@ namespace Wildbound.Tests
             g.World.Add(-20, -2, 60, 2);
             g.World.Blooms.Add(new Moonbloom(0, 1.2f, BloomKind.Updraft));
             g.Player.Reset(new V2(0, 0)); Tick(g, 5);
-            // Claw the bloom
             for (int i = 0; i < 40; i++)
             {
                 g.Step(new PlayerInput { AttackPressed = i == 0 });
@@ -114,7 +114,6 @@ namespace Wildbound.Tests
             }
             Check(g.World.Blooms[0].GlowTime > 0, "Updraft bloom not glowing");
             float y0 = g.Player.Position.Y;
-            // Stand in the updraft without jumping
             Tick(g, 50);
             Check(g.Player.Position.Y > y0 + .3f, "Updraft did not lift the puma");
         }
@@ -125,7 +124,6 @@ namespace Wildbound.Tests
             g.World.Platforms.Clear(); g.World.Enemies.Clear(); g.World.Blooms.Clear();
             g.World.Add(-20, -2, 60, 2);
             g.World.Blooms.Add(new Moonbloom(0, 1.2f, BloomKind.WideDazzle));
-            // Moth beyond standard 5 unit radius but inside 8
             g.World.Enemies.Add(new Enemy(EnemyKind.LanternMoth, 6.5f, 2, 0));
             g.Player.Reset(new V2(0, 0)); Tick(g, 5);
             for (int i = 0; i < 40; i++)
@@ -133,8 +131,26 @@ namespace Wildbound.Tests
                 g.Step(new PlayerInput { AttackPressed = i == 0 });
                 if ((g.Events & GameEvent.Bloom) != 0) break;
             }
-            var moth = g.World.Enemies[0];
-            Check(moth.Phase == EnemyPhase.Stunned, "Wide dazzle failed to stun distant moth");
+            Check(g.World.Enemies[0].Phase == EnemyPhase.Stunned, "Wide dazzle failed to stun distant moth");
+        }
+
+        private static void VineBloomTimedPlatform()
+        {
+            var g = new GameSession();
+            g.World.Platforms.Clear(); g.World.Enemies.Clear(); g.World.Blooms.Clear();
+            g.World.Add(-20, -2, 60, 2);
+            g.World.Blooms.Add(new Moonbloom(0, 1.2f, BloomKind.Vine));
+            g.World.Platforms.Add(new Platform(new Box(-.5f, 1.5f, 1.4f, .35f), Surface.Vine) { LightSource = 0, Enabled = false });
+            g.Player.Reset(new V2(0, 0)); Tick(g, 5);
+            Check(!g.World.Platforms[1].Enabled, "Vine solid before activation");
+            for (int i = 0; i < 40; i++)
+            {
+                g.Step(new PlayerInput { AttackPressed = i == 0 });
+                if ((g.Events & GameEvent.Bloom) != 0) break;
+            }
+            Check(g.World.Blooms[0].GlowTime > 0 && g.World.Platforms[1].Enabled, "Vine not solid while glowing");
+            Tick(g, 800);
+            Check(g.World.Blooms[0].GlowTime <= 0 && !g.World.Platforms[1].Enabled, "Vine remained solid after glow");
         }
     }
 }

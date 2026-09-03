@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Wildbound.Core
 {
-    public enum Surface { Stone, Moss, Spring, Moving, Moonbridge, Balance, RootGate, Trailbridge }
+    public enum Surface { Stone, Moss, Spring, Moving, Moonbridge, Balance, RootGate, Trailbridge, Vine }
     public enum PickupKind { Mote, Memory }
 
     public sealed class Platform
