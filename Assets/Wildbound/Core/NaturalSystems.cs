@@ -10,7 +10,7 @@ namespace Wildbound.Core
     public sealed class WindField
     {
         public Box Bounds;
-        public V2 Velocity; // units per second added while inside
+        public V2 Velocity;
         public string Label;
 
         public WindField(float x, float y, float w, float h, float vx, float vy = 0, string label = "")
@@ -27,9 +27,6 @@ namespace Wildbound.Core
         }
     }
 
-    /// <summary>
-    /// Short-lived scent mark left by startled or defeated prey. Visible while stalking.
-    /// </summary>
     public sealed class ScentMark
     {
         public V2 Position;
@@ -44,7 +41,6 @@ namespace Wildbound.Core
         }
     }
 
-    /// <summary>Helpers for natural interaction systems (wind, scent).</summary>
     public static class NaturalSystems
     {
         public static V2 SampleWind(WorldDefinition world, V2 point)
@@ -55,6 +51,15 @@ namespace Wildbound.Core
             {
                 if (field.Contains(point)) sum = sum + field.Velocity;
             }
+            return sum;
+        }
+
+        public static V2 SampleUpdraft(WorldDefinition world, V2 point)
+        {
+            V2 sum = new V2();
+            if (world.Blooms == null) return sum;
+            foreach (var bloom in world.Blooms)
+                sum = sum + bloom.SampleUpdraft(point);
             return sum;
         }
 
@@ -84,10 +89,6 @@ namespace Wildbound.Core
         }
     }
 
-    /// <summary>
-    /// Active memory vignette payload for Unity UI / ambient systems.
-    /// Simulation owns which memory is current; presentation is Unity-side.
-    /// </summary>
     public sealed class MemoryVignette
     {
         public string Title;
