@@ -54,7 +54,6 @@ namespace Wildbound.Core
             w.Add(33, 21, 7, .7f, Surface.Stone);
             w.Add(49, 4, 5); w.Add(58, 8, 4); w.Add(64, 12, 7);
             w.Add(18, 1, 1, 4, Surface.Stone); w.Add(29, 6, 1, 6, Surface.Stone);
-            // Climbable bark faces — optional vertical route (claw-climb budget limited).
             w.Add(18.9f, 1, .45f, 7.5f, Surface.Bark);
             w.Add(28.1f, 6, .45f, 8f, Surface.Bark);
             w.Add(54, 1.75f, 3, 1.1f, Surface.Stone);
@@ -120,6 +119,48 @@ namespace Wildbound.Core
             w.Signs.Add(new Sign(9, 1, "BORROW THE SKY", "Jump onto a pink flower to launch and restore your pounce. Hold SHIFT / X in the air, aim up, and release toward the broad island."));
             w.Signs.Add(new Sign(26, 9.7f, "A NEST BETWEEN LEAPS", "Land to refresh your pounce and dash. Follow the golden path; the crown waits above the moving perch."));
             w.Signs.Add(new Sign(47, 1, "LIGHT BELOW THE WINGS", "Claw the blue flower to interrupt the moth. The lower islands offer another route across the garden."));
+        }
+
+        private static void BuildCinder(WorldDefinition w)
+        {
+            w.CameraMaxY = 28; w.MapBounds = new Box(-6, -3, 88, 36);
+            w.Add(-5, -3, 22, 4); w.Add(20, -3, 18, 4); w.Add(42, -3, 20, 4); w.Add(65, -3, 16, 4);
+            w.Add(8, 4, 5, .7f); w.Add(16, 8, 5, .7f); w.Add(28, 12, 6, .7f);
+            w.Add(40, 16, 5, .7f); w.Add(52, 11, 5, .7f); w.Add(62, 18, 7, .7f);
+            w.Add(70, 6, 5, .7f);
+            w.Add(15.2f, 1, .5f, 9f, Surface.Bark);
+            w.Add(27.2f, 5, .5f, 10f, Surface.Bark);
+            w.Add(51.2f, 4, .5f, 9f, Surface.Bark);
+            w.WindFields.Add(new WindField(10, 1, 4, 6, 0.4f, 7.5f, "cinder-vent-a"));
+            w.WindFields.Add(new WindField(36, 8, 5, 7, -0.3f, 8.2f, "cinder-vent-b"));
+            w.WindFields.Add(new WindField(58, 5, 4, 6, 0.5f, 7.0f, "cinder-vent-c"));
+            w.Hazards.Add(new Box(24, 1, 2.2f, .35f));
+            w.Hazards.Add(new Box(48, 1, 2.5f, .35f));
+            w.Enemies.Add(new Enemy(EnemyKind.Thornling, 22, 1, 1.2f));
+            w.Enemies.Add(new Enemy(EnemyKind.Bristleback, 55, 1, 1.8f));
+            w.Enemies.Add(new Enemy(EnemyKind.ReedSpitter, 68, 7));
+            w.Enemies.Add(new Enemy(EnemyKind.LanternMoth, 42, 17, 1));
+            w.Blooms.Add(new Moonbloom(12, 1.6f, BloomKind.Ember));
+            w.Blooms.Add(new Moonbloom(44, 1.6f, BloomKind.Ember));
+            w.Blooms.Add(new Moonbloom(33, 12.8f, BloomKind.Updraft));
+            Moonpath(w, 0, 18, 5.2f, 3.5f);
+            Moonpath(w, 1, 46, 13.5f, 4f);
+            ReturnPath(w, WildPlaceId.CharcoilDen, 22, 9.5f, 4);
+            ReturnPath(w, WildPlaceId.QuietFireRidge, 58, 19.2f, 5);
+            w.Places.Add(new WildPlace(WildPlaceId.CharcoilDen, "CHARCOIL DEN",
+                "Warm stone holds the shape of old rest. A golden path opens back down the cleft.",
+                "Climb the bark or ride the heat shimmer. The den sits on the mid shelf.", "Quiet Fire", new V2(18, 8.7f),
+                new V2(9, 1), new V2(12, 4.7f), new V2(18, 8.7f)));
+            w.Places.Add(new WildPlace(WildPlaceId.QuietFireRidge, "QUIET FIRE RIDGE",
+                "Above the vents the air stills. Golden petals lead toward the ravine mouth.",
+                "Cross the ember bridges while they burn. Re-claw the flower if the light fades.", "Ridge of Quiet Fire", new V2(65, 18.7f),
+                new V2(40, 16.7f), new V2(52, 11.7f), new V2(62, 18.7f), new V2(65, 18.7f)));
+            PickupsAt(w, new V2(65, 19.9f), new V2(6, 2.1f), new V2(10, 5.5f), new V2(18, 9.5f),
+                new V2(28, 13.5f), new V2(40, 17.5f), new V2(52, 12.5f), new V2(62, 19.5f), new V2(70, 7.5f),
+                new V2(35, 2.1f), new V2(50, 2.1f), new V2(72, 2.1f));
+            w.Signs.Add(new Sign(9, 1, "WARM STONE, LIVING BARK", "Heat vents lift you. Bark faces hold claws for a short climb. Ember flowers light bridges only while they burn — claw again to refresh."));
+            w.Signs.Add(new Sign(28, 12.7f, "A SHELF ABOVE THE GLOW", "Ride the shimmer, then land. The ridge path continues east."));
+            w.Signs.Add(new Sign(54, 1, "LET HIM COMMIT", "The basalt beetle charges the floor. Vault, roll, or take the bark above."));
         }
     }
 }
