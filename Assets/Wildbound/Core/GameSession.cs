@@ -145,7 +145,18 @@ namespace Wildbound.Core
             if (Recovery > 0) { Recovery = Math.Max(0, Recovery - dt); return; }
             Time += dt;
             foreach (var platform in World.Platforms) platform.Update(Time);
-            foreach (var bloom in World.Blooms) bloom.GlowTime = Math.Max(0, bloom.GlowTime - dt);
+            for (int bi = 0; bi < World.Blooms.Count; bi++)
+            {
+                var bloom = World.Blooms[bi];
+                bloom.GlowTime = Math.Max(0, bloom.GlowTime - dt);
+                // Vine platforms exist only while the bloom is glowing (timed climbable AABB).
+                if (bloom.Kind == BloomKind.Vine)
+                {
+                    foreach (var platform in World.Platforms)
+                        if (platform.LightSource == bi && platform.Surface == Surface.Vine)
+                            platform.Enabled = bloom.GlowTime > 0;
+                }
+            }
             NaturalSystems.AdvanceScent(World, dt);
             if (VignetteTime > 0) VignetteTime = Math.Max(0, VignetteTime - dt);
             if (InTrial) World.Trial.Advance(dt);
