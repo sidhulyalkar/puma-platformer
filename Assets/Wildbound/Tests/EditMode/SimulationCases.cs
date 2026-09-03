@@ -11,6 +11,7 @@ namespace Wildbound.Tests
             foreach (var pair in CombatCases.All) All.Add(pair.Key, pair.Value);
             foreach (var pair in MoontrailCases.All) All.Add(pair.Key, pair.Value);
             foreach (var pair in ExplorationCases.All) All.Add(pair.Key, pair.Value);
+            foreach (var pair in NaturalSystemsCases.All) All.Add(pair.Key, pair.Value);
         }
         public static readonly Dictionary<string, Action> All = new Dictionary<string, Action>
         {
@@ -306,12 +307,10 @@ namespace Wildbound.Tests
             Check(axis == 0, "Expected horizontal dominant axis");
             Check(!WorldCollision.SweepAABB(mover, new V2(0, 3), wall, out toi, out axis), "False positive on clear vertical path");
         }
-
         private static void FullPounceGrantsGlide()
         {
             var with = Flat();
-            Charge(with, 90, 1); // full coil, upward bias
-            // Let pounce arc start, then hold jump to engage glide.
+            Charge(with, 90, 1);
             Tick(with, 8);
             bool glided = false;
             float minVy = 0;
@@ -323,47 +322,38 @@ namespace Wildbound.Tests
             }
             Check(with.Player.GlideBudget >= 0, "Glide budget missing after full pounce");
             Check(glided || with.Player.Gliding, "Tail-glide never engaged while holding jump");
-
             var without = Flat();
             Charge(without, 90, 1);
             Tick(without, 8);
             float fallWithout = 0;
             for (int i = 0; i < 40; i++)
             {
-                without.Step(new PlayerInput()); // no jump hold
+                without.Step(new PlayerInput());
                 fallWithout = Math.Min(fallWithout, without.Player.Velocity.Y);
             }
-            // Holding glide should not fall as hard as releasing.
             Check(minVy > fallWithout + 1f || with.Player.Position.Y > without.Player.Position.Y + .3f,
                 "Glide did not meaningfully soften descent vs no hold");
         }
-
         private static void GlideBudgetExpires()
         {
             var g = Flat();
             Charge(g, 90, 1);
             Tick(g, 5);
-            // Hold jump long enough to drain budget.
             for (int i = 0; i < 200; i++) g.Step(new PlayerInput { JumpHeld = true });
             Check(g.Player.GlideBudget <= 0.001f, "Glide budget never expired");
             Check(!g.Player.Gliding, "Still gliding after budget exhausted");
         }
-
         private static void AirControlAfterWallKick()
         {
-            // After a wall kick, air-control window should let the player reverse/steer farther.
             var boosted = Flat();
             boosted.World.Add(1, 0, .3f, 10, Surface.Stone);
             boosted.Player.Reset(new V2(.55f, 4));
             Tick(boosted, 2, new PlayerInput { Move = 1 });
             boosted.Step(new PlayerInput { Move = 1, JumpPressed = true, JumpHeld = true });
             Check((boosted.Events & GameEvent.WallKick) != 0 || boosted.Player.AirControlTime > 0, "Wall kick missing air-control grant");
-            // Steer back toward the wall side aggressively.
             float startX = boosted.Player.Position.X;
             Tick(boosted, 25, new PlayerInput { Move = 1 });
             float steered = Math.Abs(boosted.Player.Position.X - startX);
-
-            // Baseline: same kick but zero air-control mult via expired window simulation — compare magnitude is positive.
             Check(steered > .4f, "Air-control window did not allow meaningful post-kick travel");
             Check(boosted.Player.AirControlTime >= 0, "Air control timer invalid");
         }
