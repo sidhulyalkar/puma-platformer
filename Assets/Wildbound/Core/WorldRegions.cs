@@ -30,11 +30,11 @@ namespace Wildbound.Core
             ReturnPath(w, WildPlaceId.AmberOverlook, 30, 10.3f, 7);
             w.Places.Add(new WildPlace(WildPlaceId.RootHollow, "ROOT HOLLOW",
                 "Warm leaves. Old pawprints. A golden crossing now spans the forest gap.",
-                "The tracks slip beneath the roots. Roll (L / B), then pad through the hollow.", new V2(16.5f, 1),
+                "The tracks slip beneath the roots. Roll (L / B), then pad through the hollow.", "First Pawprints", new V2(16.5f, 1),
                 new V2(10.8f, 1), new V2(12.8f, 1), new V2(14.5f, 1), new V2(16.5f, 1)));
             w.Places.Add(new WildPlace(WildPlaceId.AmberOverlook, "AMBER OVERLOOK",
                 "The whole forest fits beneath her paws. A golden branch leads back toward shelter.",
-                "The scent climbs the branches. Aim a charged pounce upward; land before the next leap.", new V2(41, 11.1f),
+                "The scent climbs the branches. Aim a charged pounce upward; land before the next leap.", "Amber Watch", new V2(41, 11.1f),
                 new V2(19, 2.95f), new V2(24, 5.2f), new V2(31, 8.1f), new V2(39, 11.1f)));
             PickupsAt(w, new V2(41, 12.3f), new V2(7, 2.1f), new V2(10, 4.7f), new V2(16.5f, 1.45f),
                 new V2(24, 6.3f), new V2(31, 9.2f), new V2(36.5f, 3.8f), new V2(40, 2.5f), new V2(45, 7.5f),
@@ -67,11 +67,11 @@ namespace Wildbound.Core
             ReturnPath(w, WildPlaceId.LanternRoost, 40, 15, 7);
             w.Places.Add(new WildPlace(WildPlaceId.StillwaterShelf, "STILLWATER SHELF",
                 "A quiet pool reflects a second sky. Golden stepping stones curl around the pillar.",
-                "The prints stop above the pool. Jump onto the low stone shelf.", new V2(14, 3.7f),
+                "The prints stop above the pool. Jump onto the low stone shelf.", "Still Water", new V2(14, 3.7f),
                 new V2(8, 1), new V2(10, 1), new V2(12, 3.7f), new V2(14, 3.7f)));
             w.Places.Add(new WildPlace(WildPlaceId.LanternRoost, "LANTERN ROOST",
                 "Sleeping lights gather in the stone crown. A golden shelf opens the eastern descent.",
-                "Follow the shelves back and forth. Land, turn, and coil toward the next lantern.", new V2(37, 21.7f),
+                "Follow the shelves back and forth. Land, turn, and coil toward the next lantern.", "The Keeper's Lantern", new V2(37, 21.7f),
                 new V2(23, 6.7f), new V2(15, 9.7f), new V2(25, 12.7f), new V2(34, 15.7f), new V2(25, 18.7f), new V2(37, 21.7f)));
             PickupsAt(w, new V2(37, 22.9f), new V2(7, 2.1f), new V2(14, 4.8f), new V2(22, 7.8f),
                 new V2(15, 10.8f), new V2(25, 13.8f), new V2(34, 16.8f), new V2(25, 19.8f), new V2(44, 16.1f),
@@ -89,6 +89,9 @@ namespace Wildbound.Core
             w.Add(46, -3, 7, 4); w.Add(57, -3, 24, 4);
             w.Add(10, 1, 2, .35f, Surface.Spring); w.Add(34, 1, 2, .35f, Surface.Spring);
             w.Add(60.5f, 1, 1.5f, .35f, Surface.Spring);
+            // Mild wind ribbons (optional vertical routes). Not required for the main exit path.
+            w.WindFields.Add(new WindField(18, 6, 14, 5, 2.2f, 0.4f, "sky-ribbon-east"));
+            w.WindFields.Add(new WindField(40, 14, 16, 6, -1.5f, 0.6f, "sky-ribbon-west"));
             w.Add(15, 5, 5, .7f); w.Add(24, 9, 6, .7f); w.Add(35, 13, 6, .7f);
             w.Add(45, 17, 6, .7f); w.Add(51, 18, 4, .6f, Surface.Moving, 1.2f);
             w.Add(58, 21, 7, .7f); w.Add(66, 5, 5);
@@ -102,11 +105,11 @@ namespace Wildbound.Core
             ReturnPath(w, WildPlaceId.StarflowerCrown, 64, 18.5f, 5);
             w.Places.Add(new WildPlace(WildPlaceId.CloudNest, "CLOUD NEST",
                 "Feathers caught in a garden above the clouds. A golden path reaches the next island.",
-                "A spring starts the climb. Spend its fresh pounce on the wide island above.", new V2(26, 9.7f),
+                "A spring starts the climb. Spend its fresh pounce on the wide island above.", "Cloud Nest", new V2(26, 9.7f),
                 new V2(9, 1), new V2(17, 5.7f), new V2(26, 9.7f)));
             w.Places.Add(new WildPlace(WildPlaceId.StarflowerCrown, "STARFLOWER CROWN",
                 "One small cat beneath a thousand stars. Golden petals lead down toward home.",
-                "The scent crosses the high islands. Settle on a perch before coiling for the crown.", new V2(61, 21.7f),
+                "The scent crosses the high islands. Settle on a perch before coiling for the crown.", "Starflower Crown", new V2(61, 21.7f),
                 new V2(38, 13.7f), new V2(48, 17.7f), new V2(61, 21.7f)));
             PickupsAt(w, new V2(61, 22.9f), new V2(7, 2.1f), new V2(11, 2.5f), new V2(17, 6.8f),
                 new V2(26, 10.8f), new V2(32, 12.8f), new V2(38, 14.8f), new V2(48, 18.8f), new V2(53, 19.7f),

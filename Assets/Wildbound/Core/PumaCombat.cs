@@ -17,6 +17,9 @@ namespace Wildbound.Core
     public sealed class PumaCombat
     {
         public const int MaxHealth = 5;
+        // Tight stomp tolerance so side scrapes do not become free stomps (see docs/COMBAT_PRECISION.md).
+        public const float StompTolerance = .10f;
+
         public int Health { get; private set; } = MaxHealth;
         public int Instinct { get; private set; }
         public int Hunts { get; private set; }
@@ -141,9 +144,23 @@ namespace Wildbound.Core
             return new Box(player.Position.X + (Facing > 0 ? -.2f : -reach), player.Position.Y - .05f, reach + .2f, 1.65f);
         }
 
+        /// <summary>
+        /// Precise front-face test for armor.
+        /// Uses horizontal relationship of the strike (or player) to the enemy mid-line and the enemy facing.
+        /// </summary>
+        public static bool IsFrontApproach(Box strikeOrPlayer, Enemy enemy)
+        {
+            float mid = enemy.Bounds.Center.X;
+            float approachX = strikeOrPlayer.Center.X;
+            // Enemy faces the direction it considers "front".
+            // If the attacker is on the same side the enemy is facing toward, it is a front approach.
+            if (enemy.Facing > 0) return approachX >= mid;
+            return approachX <= mid;
+        }
+
         public void OnMovement(GameEvent events)
         {
-            if ((events & (GameEvent.Pounce | GameEvent.Jump | GameEvent.WallKick | GameEvent.Spring | GameEvent.DashClaw)) != 0)
+            if ((events & (GameEvent.Pounce | GameEvent.Jump | GameEvent.WallKick | GameEvent.Spring | GameEvent.DashClaw | GameEvent.Mantle)) != 0)
                 bodyHits.Clear();
         }
 
@@ -156,16 +173,16 @@ namespace Wildbound.Core
             {
                 var enemy = world.Enemies[i];
                 if (!enemy.Alive || hitEnemies.Contains(i) || !strike.Overlaps(enemy.Bounds)
-                    || !WorldCollision.ClearLine(world, player.Bounds.Center, enemy.Bounds.Center)) continue;
+                    || !WorldCollision.StrikeClear(world, strike, enemy.Bounds.Center)) continue;
                 hitEnemies.Add(i);
                 bool ambush = Ambush && enemy.Phase == EnemyPhase.Idle;
-                events |= Strike(enemy, player, Timing.Damage + (Empowered ? 1 : 0) + (ambush ? 1 : 0), Move == ClawMove.DownRake, ambush);
+                events |= Strike(enemy, player, Timing.Damage + (Empowered ? 1 : 0) + (ambush ? 1 : 0), Move == ClawMove.DownRake, ambush, strike);
             }
             for (int i = 0; i < world.Blooms.Count; i++)
             {
                 var bloom = world.Blooms[i];
                 if (bloom.LastAttack == Sequence || bloom.GlowTime > 5 || !strike.Overlaps(bloom.Bounds)
-                    || !WorldCollision.ClearLine(world, player.Bounds.Center, bloom.Position)) continue;
+                    || !WorldCollision.StrikeClear(world, strike, bloom.Position)) continue;
                 bloom.LastAttack = Sequence; bloom.Awakened = true; bloom.GlowTime = 6;
                 LastImpact = bloom.Position; events |= GameEvent.Bloom;
                 foreach (var platform in world.Platforms) if (platform.LightSource == i) platform.Enabled = true;
@@ -189,24 +206,26 @@ namespace Wildbound.Core
             {
                 var enemy = world.Enemies[i];
                 if (!enemy.Alive || enemy.Kind == EnemyKind.ClawPost || !player.Bounds.Overlaps(enemy.Bounds)) continue;
-                // A connected rake already owns this impact; do not stack a body hit on it.
+                // A connected rake/claw already owns this impact; do not stack a body hit on it.
+                if (hitEnemies.Contains(i)) continue;
                 if (Active && hitEnemies.Contains(i)) continue;
-                bool descending = dy < 0 && oldFeet >= enemy.Bounds.Top - .13f;
+                bool descending = dy < 0 && oldFeet >= enemy.Bounds.Top - StompTolerance;
                 if ((player.PounceTime > 0 || descending) && !bodyHits.Contains(i))
                 {
                     bodyHits.Add(i);
-                    events |= Strike(enemy, player, 1, descending, false);
+                    events |= Strike(enemy, player, 1, descending, false, player.Bounds);
                     if (descending && (events & GameEvent.Hit) != 0) events |= GameEvent.Stomp;
                 }
             }
             return events;
         }
 
-        private GameEvent Strike(Enemy enemy, PumaMotor player, int damage, bool downward, bool ambush)
+        private GameEvent Strike(Enemy enemy, PumaMotor player, int damage, bool downward, bool ambush, Box approachBox)
         {
             LastImpact = enemy.Bounds.Center;
-            bool front = (player.Position.X - enemy.Position.X) * enemy.Facing >= 0;
-            if (enemy.Armored && front && !downward && player.Position.Y < enemy.Bounds.Top)
+            bool front = IsFrontApproach(approachBox, enemy);
+            // Downward rakes always bypass front armor (jump-above / falling-rake fantasy).
+            if (enemy.Armored && front && !downward)
             { enemy.HitFlash = .1f; return GameEvent.Block; }
             enemy.ReceiveHit(damage, Facing);
             GameEvent events = GameEvent.Hit | (ambush ? GameEvent.Ambush : GameEvent.None);
