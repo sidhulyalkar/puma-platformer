@@ -73,6 +73,7 @@ namespace Wildbound.Core
             foreach (var place in World.Places) if ((Save.Discoveries & place.Mask) != 0) place.OpenPath(World);
             LastDiscovery = null; LastVignette = null; VignetteTime = 0;
             if (World.ScentMarks != null) World.ScentMarks.Clear();
+            EncounterDirector.Reset(World);
         }
         private void RestoreLightBridges()
         {
@@ -81,7 +82,6 @@ namespace Wildbound.Core
             foreach (var platform in World.Platforms)
                 if (platform.Surface == Surface.Moonbridge)
                 {
-                    // Ember bridges stay timed; only lasting standard bridges restore.
                     bool ember = false;
                     if (platform.LightSource >= 0 && platform.LightSource < World.Blooms.Count)
                         ember = World.Blooms[platform.LightSource].Kind == BloomKind.Ember;
@@ -118,6 +118,7 @@ namespace Wildbound.Core
         {
             Player.Reset(CheckpointPosition()); Combat.ResetForRespawn(); Projectiles.Clear();
             foreach (var enemy in World.Enemies) enemy.ReturnHome();
+            EncounterDirector.Reset(World);
             if (InTrial && World.Trial.Balance != null && !World.Trial.Balance.Attuned) World.Trial.Balance.Charge = 0;
             Recovery = .3f; Deaths++; Events |= GameEvent.Respawn;
         }
@@ -191,6 +192,7 @@ namespace Wildbound.Core
             Events |= Combat.Prepare(ref input, Player, dt);
             Events |= Player.Prepare(input, dt);
             Combat.ApplyMotion(Player); Combat.OnMovement(Events);
+            EncounterDirector.Tick(World, Player);
             foreach (var enemy in World.Enemies) enemy.Step(World, Player, Projectiles, dt);
             bool wasGrounded = Player.Grounded;
             V2 delta = Player.Velocity * dt;
