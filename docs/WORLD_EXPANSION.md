@@ -1,87 +1,48 @@
 # World Expansion Plan
 
-Expand only after the current three regions (Canopy, Grotto, Sky) feel excellent in human playtest. New biomes should teach one new verb or deepen an existing natural system—not dump content.
+## Current biomes
 
-## Current biomes (v0.5)
+| # | Biome | Status | Signature systems |
+| --- | --- | --- | --- |
+| 0 | Amber Canopy | Shipped | Scent, standard/updraft blooms |
+| 1 | Lantern Grotto | Shipped | Vine ladder, bark climb, moth dazzle |
+| 2 | Sky Garden | Shipped | Wind ribbons, wide-dazzle |
+| 3 | **Cinder Ravine** | **Scaffolded** | Heat vents, ember timed bridges, bark climbs |
 
-| Biome | Traversal identity | Signature systems |
-| --- | --- | --- |
-| Amber Canopy | Root crawl + branching canopy | Scent trails, standard/updraft blooms |
-| Lantern Grotto | Tall switchbacks | Vine bloom ladder, **Bark claw-climb**, moth dazzle |
-| Sky Garden | Island chain + springs | Wind ribbons, wide-dazzle blooms |
+## Cinder Ravine (biome 3)
 
-## Candidate biomes
+**Fantasy:** Warm volcanic cleft under a red moon. Embers drift; cooled basalt is climbable; live vents are hazards and lifts.
 
-### 1. Cinder Ravine (priority A)
-
-**Fantasy:** Warm volcanic cleft under a red moon. Embers drift; cooled basalt is climbable; live vents are hazards.
-
-| Element | Design |
+| Element | Implementation |
 | --- | --- |
-| Traversal | Long vertical Bark faces + short ember-jumps |
-| New verb | **Heat shimmer** — brief upward gust near vents (reuse updraft sample) |
-| Enemies | Ash hopper (hare variant), cinder spitters, armored basalt beetle (bristleback timing) |
-| Blooms | Emberbloom — short timed bridge that *decays* unless re-clawed |
-| Wild places | Charcoil Den, Ridge of Quiet Fire |
-| Risk | Do not require climb stamina longer than `ClimbBudgetSeconds` |
+| Heat shimmer | `WindField` with strong +Y (reuse sampler) |
+| Bark climb | `Surface.Bark` faces (claw-climb budget) |
+| Emberbloom | `BloomKind.Ember` — linked moonbridges solid **only while GlowTime > 0**; re-claw when `GlowTime ≤ 5` |
+| Wild places | Charcoil Den, Quiet Fire Ridge |
+| Floor hazards | Ember pits (hazard AABBs) |
+| Enemies | Reused thornling / bristleback / spitter / moth |
 
-### 2. Frostglass Ridge (priority A)
+Portal chain: Canopy → Grotto → Sky → **Cinder** → journey complete.
 
-**Fantasy:** Thin ice sheets, brittle platforms, moonlit blue.
+JourneySave holds 4 biomes (Collected / Checkpoints length 4; Waystones mask 4 bits; Discoveries 8 place bits).
 
-| Element | Design |
-| --- | --- |
-| Traversal | Low-friction ice (reduced brake), fragile ice plates |
-| New verb | **Frost slide** — commit to a long slide; jump cancel |
-| Enemies | Glass moth (dives on reflection), ice spitters |
-| Blooms | Frostbloom — freezes a hazard corridor for GlowTime |
-| Wild places | Mirror Shelf, Crown of Quiet |
-| Risk | Keep rectangular solver; simulate ice as brake/accel multipliers, not slopes |
+## Still planned
 
-### 3. Tidal Hollow (priority B)
+### Frostglass Ridge (priority A)
+Low-friction ice (brake/accel multipliers), fragile plates, frostbloom hazard freeze.
 
-**Fantasy:** Flooded mangrove basin. Water line rises/falls on a readable timer.
+### Tidal Hollow (priority B)
+Water AABBs with tide cycle; tidebloom locks water height.
 
-| Element | Design |
-| --- | --- |
-| Traversal | Swim-lite (slow horizontal + soft buoyancy) in water AABBs |
-| New verb | **Tide window** — platforms emerge/submerge on cycle |
-| Enemies | Reed crabs, surface skimmers |
-| Blooms | Tidebloom — locks water height for GlowTime |
-| Wild places | Pearl Root, Low-Tide Crossing |
+### Whispering Mire (priority B)
+Mud speed penalty; echo-stalk extends scent range.
 
-### 4. Whispering Mire (priority B)
-
-**Fantasy:** Fog, soft ground, sound-based hunting.
-
-| Element | Design |
-| --- | --- |
-| Traversal | Soft mud (speed penalty), firm root roads |
-| New verb | **Echo stalk** — stalking reveals prey noise rings farther |
-| Enemies | Silent hares, fog moths |
-| Blooms | Fogbloom — clears local fog / reveals tracks |
-
-### 5. Starfall Archive (endgame optional)
-
-**Fantasy:** Ruined sky-library linking all waystones. Puzzle-light, low combat.
-
-| Element | Design |
-| --- | --- |
-| Traversal | All prior verbs as a mastery exam |
-| Reward | Epilogue vignette + gallery of discoveries |
+### Starfall Archive (endgame)
+Mastery exam of all verbs; epilogue gallery.
 
 ## Expansion rules
 
-1. One new biome at a time; ship with regression cases + a human feel pass.
-2. Main exit remains open without the new verb (optional depth).
-3. Reuse wind / bloom / climb / scent infrastructure—prefer new *content* over new *physics*.
-4. Biome count in `WorldDefinition.Create` stays a single int switch until a registry is needed.
-5. Story: each biome adds one memory vignette beat (see STORY.md).
-
-## Suggested order
-
-1. Finish Unity playtest of Canopy → Grotto → Sky
-2. Cinder Ravine (climb + heat)
-3. Frostglass Ridge (friction identity)
-4. Tidal Hollow or Mire based on which fantasy plays better
-5. Starfall Archive as epilogue
+1. One new biome at a time; ship with regression cases + human feel pass.
+2. Main exit open without the new verb.
+3. Reuse wind / bloom / climb / scent — prefer new content over new physics.
+4. Tune Cinder in Unity before authoring Frostglass.
