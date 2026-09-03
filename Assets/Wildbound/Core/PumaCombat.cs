@@ -17,7 +17,6 @@ namespace Wildbound.Core
     public sealed class PumaCombat
     {
         public const int MaxHealth = 5;
-        // Tight stomp tolerance so side scrapes do not become free stomps (see docs/COMBAT_PRECISION.md).
         public const float StompTolerance = .10f;
 
         public int Health { get; private set; } = MaxHealth;
@@ -144,16 +143,10 @@ namespace Wildbound.Core
             return new Box(player.Position.X + (Facing > 0 ? -.2f : -reach), player.Position.Y - .05f, reach + .2f, 1.65f);
         }
 
-        /// <summary>
-        /// Precise front-face test for armor.
-        /// Uses horizontal relationship of the strike (or player) to the enemy mid-line and the enemy facing.
-        /// </summary>
         public static bool IsFrontApproach(Box strikeOrPlayer, Enemy enemy)
         {
             float mid = enemy.Bounds.Center.X;
             float approachX = strikeOrPlayer.Center.X;
-            // Enemy faces the direction it considers "front".
-            // If the attacker is on the same side the enemy is facing toward, it is a front approach.
             if (enemy.Facing > 0) return approachX >= mid;
             return approachX <= mid;
         }
@@ -186,9 +179,10 @@ namespace Wildbound.Core
                 bloom.LastAttack = Sequence; bloom.Awakened = true; bloom.GlowTime = 6;
                 LastImpact = bloom.Position; events |= GameEvent.Bloom;
                 foreach (var platform in world.Platforms) if (platform.LightSource == i) platform.Enabled = true;
+                float dazzleR = bloom.DazzleRadius; float dazzleS = bloom.DazzleStun;
                 foreach (var enemy in world.Enemies)
-                    if (enemy.Kind == EnemyKind.LanternMoth && (enemy.Position - bloom.Position).Length < 5
-                        && WorldCollision.ClearLine(world, bloom.Position, enemy.Bounds.Center)) enemy.Stun(1.2f);
+                    if (enemy.Kind == EnemyKind.LanternMoth && (enemy.Position - bloom.Position).Length < dazzleR
+                        && WorldCollision.ClearLine(world, bloom.Position, enemy.Bounds.Center)) enemy.Stun(dazzleS);
             }
             if (world.Trial != null)
             {
@@ -206,7 +200,6 @@ namespace Wildbound.Core
             {
                 var enemy = world.Enemies[i];
                 if (!enemy.Alive || enemy.Kind == EnemyKind.ClawPost || !player.Bounds.Overlaps(enemy.Bounds)) continue;
-                // A connected rake/claw already owns this impact; do not stack a body hit on it.
                 if (hitEnemies.Contains(i)) continue;
                 if (Active && hitEnemies.Contains(i)) continue;
                 bool descending = dy < 0 && oldFeet >= enemy.Bounds.Top - StompTolerance;
@@ -224,7 +217,6 @@ namespace Wildbound.Core
         {
             LastImpact = enemy.Bounds.Center;
             bool front = IsFrontApproach(approachBox, enemy);
-            // Downward rakes always bypass front armor (jump-above / falling-rake fantasy).
             if (enemy.Armored && front && !downward)
             { enemy.HitFlash = .1f; return GameEvent.Block; }
             enemy.ReceiveHit(damage, Facing);
