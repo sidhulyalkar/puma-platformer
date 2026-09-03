@@ -1,5 +1,14 @@
 # Validation and release boundary
 
+## First Paws qualification — 2026-09-03
+
+- **133/133 simulation cases pass locally**, including all 112 Living Trails cases and 21 new practice/guidance cases. The new opening route starts at the authored spawn, uses only input, keeps wildlife active, practices six actions, and discovers Root Hollow without a death or a trial.
+- Practice rejection coverage includes canceled/unavailable pounces, airborne rolls/jumps, low ceilings, empty claws, armor blocks, body hits, dash windup, hidden/absent scent, pause, and checkpoint recovery. Persistence and objective tests cover older saves, malformed bits, travel, trials, and restored waystones.
+- **26 C# sources parse with zero syntax errors** under C# 9. Project validation passes with **45 unique asset GUIDs**; whitespace checks pass.
+- The local .NET 8.0.424 SDK CLI cannot read its process-start metadata in this container. Local compilation uses that SDK's Roslyn compiler directly, the .NET 8 reference assemblies, warnings as errors, and the normal C# 9 language level. The resulting runner and syntax checker execute on .NET 8.0.30. GitHub Actions separately runs the repository's standard `dotnet run --project ...` commands; use the PR checks for their exact-commit outcome.
+
+The input route uses analog steering and deliberately faces its targets. It proves the simulation can perform the actions and record their notes, not first-time keyboard usability or rendering. **Unity import, API/shader compilation, save serialization in PlayerPrefs, field-guide layout, and WebGL remain unverified.** See the [focused First Paws playtest](FIRST_PAWS.md).
+
 ## Living Trails qualification — 2026-09-02
 
 [Gameplay core run 33666605865](https://github.com/sidhulyalkar/puma-platformer/actions/runs/33666605865) passed at gameplay commit `833a964f0dab1810b37fb57548b1bc6673977188`. Subsequent release metadata and documentation changes use the same gameplay sources; check the PR's final commit status before merging.
@@ -12,7 +21,7 @@
 - Structural validation passes with **43 unique asset GUIDs**. CI parses **all 24 Assets C# files with zero syntax errors** using C# 9 and the pinned .NET 8 SDK. This is not Unity API or shader compilation.
 - The coordinate schematic is generated from `WorldRegions.cs` and visually inspected for layout. It is design evidence, not a rendering of the game.
 
-This container has no .NET SDK or activated Unity editor. Executable C# verification ran in GitHub Actions with the standard SDK commands. Local work includes structural validation, source review, whitespace checks, and schematic generation. The route policies use analog steering and retries; passing them does not establish first-time keyboard difficulty, play duration, or enjoyment. They deliberately cover the memories and named places, not every possible approach or every mote.
+The v0.4 working environment had no .NET SDK or activated Unity editor. Its executable C# verification ran in GitHub Actions with the standard SDK commands. Local work included structural validation, source review, whitespace checks, and schematic generation. The route policies use analog steering and retries; passing them does not establish first-time keyboard difficulty, play duration, or enjoyment. They deliberately cover the memories and named places, not every possible approach or every mote.
 
 ## Not verified in this environment
 

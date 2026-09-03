@@ -90,7 +90,7 @@ namespace Wildbound.Unity
             if ((e & GameEvent.Breach) != 0) Announce("Roots part. Find your opening beyond them.");
             if ((e & GameEvent.ObjectiveBlocked) != 0 && Session.InTrial) Announce(Session.World.Trial.NextGoal(Session.World), 5);
             if ((e & GameEvent.Waystone) != 0) Announce("Waystone restored. This region's light bridges now stay awake.", 7);
-            if ((e & (GameEvent.Collect | GameEvent.Secret | GameEvent.Checkpoint | GameEvent.Portal | GameEvent.Waystone | GameEvent.Discovery)) != 0) MarkSave();
+            if ((e & (GameEvent.Collect | GameEvent.Secret | GameEvent.Checkpoint | GameEvent.Portal | GameEvent.Waystone | GameEvent.Discovery | GameEvent.Practice)) != 0) MarkSave();
             if (!completedBefore && Session.Save.Completed) { ShowEnding = true; Session.SetPaused(true); }
             sound.React(e); view.React(e);
         }

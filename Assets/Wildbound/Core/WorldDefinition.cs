@@ -30,7 +30,9 @@ namespace Wildbound.Core
     public sealed class Sign
     {
         public V2 Position; public string Heading, Text;
-        public Sign(float x, float y, string heading, string text) { Position = new V2(x, y); Heading = heading; Text = text; }
+        public PracticeSkill Skills;
+        public Sign(float x, float y, string heading, string text, PracticeSkill skills = PracticeSkill.None)
+        { Position = new V2(x, y); Heading = heading; Text = text; Skills = skills; }
     }
     public sealed partial class WorldDefinition
     {
@@ -66,8 +68,8 @@ namespace Wildbound.Core
             if (biome == 0) BuildCanopy(w);
             else if (biome == 1) BuildGrotto(w);
             else BuildSky(w);
-            w.Signs.Add(new Sign(3, 1, "QUIET PAWS. A WIDE WORLD.", "A / D or arrows to move. SPACE / gamepad A jumps; hold for height. Pale edges mark the places your paws can land."));
-            w.Signs.Add(new Sign(5, 1, "A HUNTER'S HANDS", "J / RB to claw the scratch post. Hold Q / LT to stalk prey and bring nearby scent tracks into focus."));
+            w.Signs.Add(new Sign(3, 1, "QUIET PAWS. A WIDE WORLD.", "A / D or arrows to move. SPACE / gamepad A jumps; hold for height. Pale edges mark the places your paws can land.", PracticeSkill.Jump));
+            w.Signs.Add(new Sign(5, 1, "A HUNTER'S HANDS", "J / RB to claw the scratch post. Hold Q / LT to stalk prey and bring nearby scent tracks into focus.", PracticeSkill.Claw));
             w.Signs.Add(new Sign(23, 1, "A PLACE TO RETURN TO", "This shelter remembers your trail. Wild places open golden paths home. Every discovery is optional."));
             w.Signs.Add(new Sign(74, 1, "A DOOR TO SOMEWHERE", biome == 2 ? "E / Y at the arch finishes the journey. Your wild places and waystones remain yours." : "E / Y at the arch discovers the next world. You can return through the map."));
             return w;
