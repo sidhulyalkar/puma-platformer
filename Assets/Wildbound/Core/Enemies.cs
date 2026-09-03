@@ -87,6 +87,9 @@ namespace Wildbound.Core
             else { Stun(.2f); Velocity.X = direction * 3; }
         }
 
+        public void FaceToward(PumaMotor puma)
+        { Facing = puma.Position.X >= Position.X ? 1 : -1; }
+
         public void Step(WorldDefinition world, PumaMotor puma, List<Projectile> projectiles, float dt)
         {
             Clock += dt; PhaseTime += dt;
