@@ -22,7 +22,6 @@ namespace Wildbound.Core
         }
     }
 
-    /// <summary>The same simulation is used by Unity and the CPU regression runner.</summary>
     public sealed class GameSession
     {
         public const float StepSeconds = 1f / 120;
@@ -37,6 +36,8 @@ namespace Wildbound.Core
         public float Recovery { get; private set; }
         public bool Paused;
         public WildPlace LastDiscovery { get; private set; }
+        public MemoryVignette LastVignette { get; private set; }
+        public float VignetteTime { get; private set; }
         public int DiscoveryCount
         {
             get { int n = 0; for (int i = 0; i < 6; i++) if ((Save.Discoveries & (1 << i)) != 0) n++; return n; }
@@ -60,7 +61,8 @@ namespace Wildbound.Core
             Combat.ResetForRespawn(); Projectiles.Clear();
             RestoreLightBridges();
             foreach (var place in World.Places) if ((Save.Discoveries & place.Mask) != 0) place.OpenPath(World);
-            LastDiscovery = null;
+            LastDiscovery = null; LastVignette = null; VignetteTime = 0;
+            if (World.ScentMarks != null) World.ScentMarks.Clear();
         }
         private void RestoreLightBridges()
         {
@@ -143,7 +145,19 @@ namespace Wildbound.Core
             if (Recovery > 0) { Recovery = Math.Max(0, Recovery - dt); return; }
             Time += dt;
             foreach (var platform in World.Platforms) platform.Update(Time);
-            foreach (var bloom in World.Blooms) bloom.GlowTime = Math.Max(0, bloom.GlowTime - dt);
+            for (int bi = 0; bi < World.Blooms.Count; bi++)
+            {
+                var bloom = World.Blooms[bi];
+                bloom.GlowTime = Math.Max(0, bloom.GlowTime - dt);
+                if (bloom.Kind == BloomKind.Vine)
+                {
+                    foreach (var platform in World.Platforms)
+                        if (platform.LightSource == bi && platform.Surface == Surface.Vine)
+                            platform.Enabled = bloom.GlowTime > 0;
+                }
+            }
+            NaturalSystems.AdvanceScent(World, dt);
+            if (VignetteTime > 0) VignetteTime = Math.Max(0, VignetteTime - dt);
             if (InTrial) World.Trial.Advance(dt);
             if (Player.LowProfile && Player.RollTime <= 0 && !WorldCollision.OverlapsSolid(World,
                 new Box(Player.Position.X - PumaMotor.Width / 2, Player.Position.Y, PumaMotor.Width, PumaMotor.Height)))
@@ -156,9 +170,12 @@ namespace Wildbound.Core
             foreach (var enemy in World.Enemies) enemy.Step(World, Player, Projectiles, dt);
             bool wasGrounded = Player.Grounded;
             V2 delta = Player.Velocity * dt;
+            V2 wind = NaturalSystems.SampleWind(World, Player.Bounds.Center);
+            delta = delta + wind * dt;
+            V2 lift = NaturalSystems.SampleUpdraft(World, Player.Bounds.Center);
+            delta = delta + lift * dt;
             if (InTrial) delta.X += World.Trial.WindDrift(Player, Time) * dt;
-            // Substeps bound travel below the thinnest authored collider, including fast pounces.
-            int steps = Math.Max(1, (int)Math.Ceiling(Math.Max(Math.Abs(delta.X), Math.Abs(delta.Y)) / .12f));
+            int steps = Math.Max(1, (int)Math.Ceiling(Math.Max(Math.Abs(delta.X), Math.Abs(delta.Y)) / WorldCollision.MaxSubstep));
             Player.Grounded = false; Player.GroundIndex = -1;
             for (int i = 0; i < steps; i++)
             {
@@ -172,7 +189,10 @@ namespace Wildbound.Core
                 if (Combat.Health <= 0) { Respawn(); return; }
                 if ((Events & GameEvent.Hurt) != 0 || (delta.Y < 0 && Player.Velocity.Y > 0)) break;
             }
+            if ((Events & GameEvent.Hunt) != 0)
+                NaturalSystems.DropHareScent(World, Combat.LastImpact);
             ProbeContacts();
+            TryMantle();
             if (!wasGrounded && Player.Grounded) Events |= GameEvent.Land;
             if (Player.Grounded && Player.GroundIndex >= 0 && World.Platforms[Player.GroundIndex].Surface == Surface.Spring)
             { Player.Spring(); Events |= GameEvent.Spring; Combat.OnMovement(GameEvent.Spring); }
@@ -180,7 +200,6 @@ namespace Wildbound.Core
             for (int i = Projectiles.Count - 1; i >= 0; i--)
             {
                 var shot = Projectiles[i]; V2 next = shot.Position + shot.Velocity * dt; shot.Life -= dt;
-                // Resolve the nearest intersection; a wall behind the player is not a shield.
                 float wallFraction = float.PositiveInfinity;
                 foreach (var platform in World.Platforms)
                 {
@@ -216,20 +235,29 @@ namespace Wildbound.Core
                         }
                     }
                 }
-                return; // Trial progress must never overwrite the outside world's pickup/checkpoint IDs.
+                return;
             }
             foreach (var place in World.Places)
                 if (!place.Found && place.Reached(Player))
                 {
                     place.OpenPath(World); Save.Discoveries |= place.Mask;
                     LastDiscovery = place; Events |= GameEvent.Discovery;
+                    LastVignette = place.ToVignette(Save.Biome);
+                    VignetteTime = LastVignette.DisplaySeconds;
                 }
             for (int i = 0; i < World.Pickups.Count; i++)
             {
                 var p = World.Pickups[i];
                 if (p.Collected || (p.Position - Player.Bounds.Center).Length > .95f) continue;
                 p.Collected = true; Save.Collected[Save.Biome] |= 1 << i;
-                Events |= p.Kind == PickupKind.Memory ? GameEvent.Secret : GameEvent.Collect;
+                if (p.Kind == PickupKind.Memory)
+                {
+                    var md = MemoryDescriptor.ForBiome(Save.Biome);
+                    LastVignette = new MemoryVignette(md.Title, World.Memory, md.Beat, Save.Biome);
+                    VignetteTime = LastVignette.DisplaySeconds;
+                    Events |= GameEvent.Secret;
+                }
+                else Events |= GameEvent.Collect;
             }
             for (int i = 0; i < World.Checkpoints.Count; i++)
                 if (Save.Checkpoints[Save.Biome] != i && (Player.Position - World.Checkpoints[i]).Length < 1)
@@ -240,6 +268,19 @@ namespace Wildbound.Core
                 if (Save.Biome < 2) { LoadWorld(Save.Biome + 1); Events |= GameEvent.Portal; }
                 else if (!Save.Completed) { Save.Completed = true; Events |= GameEvent.Portal; }
             }
+        }
+
+        private void TryMantle()
+        {
+            if (Player.Mantling || Player.Climbing || Player.Grounded || Player.LowProfile || Player.RollTime > 0 || Player.DashTime > 0) return;
+            if (Player.Velocity.Y < -2f) return;
+            float targetY; int index;
+            if (!WorldCollision.TryFindLedge(World, Player, out targetY, out index)) return;
+            if (!Player.TryStartMantle()) return;
+            var ledge = World.Platforms[index].Bounds;
+            float standX = Player.Facing > 0 ? ledge.X + .4f : ledge.Right - .4f;
+            Player.Position = new V2(standX, Math.Min(Player.Position.Y, targetY - .05f));
+            Events |= GameEvent.Mantle;
         }
 
         private void MoveAxis(float amount, bool horizontal)
@@ -265,14 +306,23 @@ namespace Wildbound.Core
         {
             Box b = Player.Bounds;
             Player.Wall = 0;
+            Player.WallClimbable = false;
             for (int i = 0; i < World.Platforms.Count; i++)
             {
                 if (!World.Platforms[i].Enabled) continue;
                 Box p = World.Platforms[i].Bounds;
                 if (Player.Velocity.Y <= 0 && new Box(b.X + .04f, b.Y - .025f, b.W - .08f, .025f).Overlaps(p))
                 { Player.Grounded = true; Player.GroundIndex = i; }
-                if (new Box(b.Right, b.Y + .08f, .04f, b.H - .16f).Overlaps(p)) Player.Wall = 1;
-                else if (new Box(b.X - .04f, b.Y + .08f, .04f, b.H - .16f).Overlaps(p)) Player.Wall = -1;
+                if (new Box(b.Right, b.Y + .08f, .04f, b.H - .16f).Overlaps(p))
+                {
+                    Player.Wall = 1;
+                    if (World.Platforms[i].Surface == Surface.Bark) Player.WallClimbable = true;
+                }
+                else if (new Box(b.X - .04f, b.Y + .08f, .04f, b.H - .16f).Overlaps(p))
+                {
+                    Player.Wall = -1;
+                    if (World.Platforms[i].Surface == Surface.Bark) Player.WallClimbable = true;
+                }
             }
         }
     }

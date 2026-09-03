@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Wildbound.Core
 {
-    public enum Surface { Stone, Moss, Spring, Moving, Moonbridge, Balance, RootGate, Trailbridge }
+    public enum Surface { Stone, Moss, Spring, Moving, Moonbridge, Balance, RootGate, Trailbridge, Vine, Bark }
     public enum PickupKind { Mote, Memory }
 
     public sealed class Platform
@@ -48,6 +48,8 @@ namespace Wildbound.Core
         public readonly List<Enemy> Enemies = new List<Enemy>();
         public readonly List<WildPlace> Places = new List<WildPlace>();
         public readonly List<Moonbloom> Blooms = new List<Moonbloom>();
+        public readonly List<WindField> WindFields = new List<WindField>();
+        public readonly List<ScentMark> ScentMarks = new List<ScentMark>();
         public void Add(float x, float y, float w, float h = 1, Surface surface = Surface.Moss, float travel = 0)
         { Platforms.Add(new Platform(new Box(x, y, w, h), surface, travel)); }
 
@@ -58,7 +60,6 @@ namespace Wildbound.Core
             w.Name = new[] { "THE AMBER CANOPY", "THE LANTERN GROTTO", "THE SKY GARDEN" }[biome];
             w.Subtitle = new[] { "Quiet paws beneath an amber moon.", "Wake the flowers. Follow their light.", "Hunt among the stars." }[biome];
             w.Memory = new[] { "The forest remembers every small beginning.", "Even the quietest places are full of life.", "Home is a trail you can choose again." }[biome];
-            // List positions remain the v1 pickup/checkpoint IDs, even when geometry changes.
             w.Checkpoints.Add(new V2(23, 1)); w.Checkpoints.Add(new V2(60, 1));
             w.Add(-6, -3, 1, 38, Surface.Stone); w.Add(81, -3, 1, 38, Surface.Stone);
             w.Enemies.Add(new Enemy(EnemyKind.ClawPost, 5, 1));
