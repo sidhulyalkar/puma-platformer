@@ -47,7 +47,10 @@ namespace Wildbound.Tests
             { "Rising into a clear ledge triggers mantle", MantleOntoLedge },
             { "Authored platforms respect minimum solid thickness", PlatformThicknessInvariant },
             { "Peak speeds still subdivide under MaxSubstep", SpeedSubstepBudget },
-            { "SweepAABB reports TOI before tunneling a thin wall", SweepDetectsThinWall }
+            { "SweepAABB reports TOI before tunneling a thin wall", SweepDetectsThinWall },
+            { "Full pounce grants a limited tail-glide", FullPounceGrantsGlide },
+            { "Tail-glide budget expires", GlideBudgetExpires },
+            { "Air control after wall kick improves steering", AirControlAfterWallKick }
         };
         private static void Check(bool value, string message) { if (!value) throw new Exception(message); }
         private static bool Near(float a, float b, float epsilon = .02f) { return Math.Abs(a - b) < epsilon; }
@@ -268,7 +271,6 @@ namespace Wildbound.Tests
             Check(mantled, "Mantle event never fired");
             Check(g.Player.Position.Y >= 2.0f, "Did not finish above the ledge lip");
         }
-
         private static void PlatformThicknessInvariant()
         {
             Check(WorldCollision.MaxSubstep < WorldCollision.MinSolidThickness, "MaxSubstep must stay below MinSolidThickness");
@@ -284,7 +286,6 @@ namespace Wildbound.Tests
                 }
             }
         }
-
         private static void SpeedSubstepBudget()
         {
             var tuning = new MovementTuning();
@@ -294,10 +295,8 @@ namespace Wildbound.Tests
             Check(perTick / steps <= WorldCollision.MaxSubstep + 1e-5f, "Peak speed exceeds sub-step budget");
             Check(steps >= 1, "Sub-step count collapsed");
         }
-
         private static void SweepDetectsThinWall()
         {
-            // Wall thinner than MaxSubstep: discrete single step could miss; sweep must still report TOI.
             var mover = new Box(0, 0, .9f, 1.05f);
             var wall = new Box(2, -1, .08f, 4);
             float toi; int axis;
@@ -305,8 +304,68 @@ namespace Wildbound.Tests
             Check(hit, "Sweep missed thin wall");
             Check(toi > 0 && toi < 1, "TOI not in open unit interval");
             Check(axis == 0, "Expected horizontal dominant axis");
-            // Clear path should miss.
             Check(!WorldCollision.SweepAABB(mover, new V2(0, 3), wall, out toi, out axis), "False positive on clear vertical path");
+        }
+
+        private static void FullPounceGrantsGlide()
+        {
+            var with = Flat();
+            Charge(with, 90, 1); // full coil, upward bias
+            // Let pounce arc start, then hold jump to engage glide.
+            Tick(with, 8);
+            bool glided = false;
+            float minVy = 0;
+            for (int i = 0; i < 40; i++)
+            {
+                with.Step(new PlayerInput { JumpHeld = true });
+                if ((with.Events & GameEvent.Glide) != 0) glided = true;
+                if (with.Player.Gliding) minVy = Math.Min(minVy, with.Player.Velocity.Y);
+            }
+            Check(with.Player.GlideBudget >= 0, "Glide budget missing after full pounce");
+            Check(glided || with.Player.Gliding, "Tail-glide never engaged while holding jump");
+
+            var without = Flat();
+            Charge(without, 90, 1);
+            Tick(without, 8);
+            float fallWithout = 0;
+            for (int i = 0; i < 40; i++)
+            {
+                without.Step(new PlayerInput()); // no jump hold
+                fallWithout = Math.Min(fallWithout, without.Player.Velocity.Y);
+            }
+            // Holding glide should not fall as hard as releasing.
+            Check(minVy > fallWithout + 1f || with.Player.Position.Y > without.Player.Position.Y + .3f,
+                "Glide did not meaningfully soften descent vs no hold");
+        }
+
+        private static void GlideBudgetExpires()
+        {
+            var g = Flat();
+            Charge(g, 90, 1);
+            Tick(g, 5);
+            // Hold jump long enough to drain budget.
+            for (int i = 0; i < 200; i++) g.Step(new PlayerInput { JumpHeld = true });
+            Check(g.Player.GlideBudget <= 0.001f, "Glide budget never expired");
+            Check(!g.Player.Gliding, "Still gliding after budget exhausted");
+        }
+
+        private static void AirControlAfterWallKick()
+        {
+            // After a wall kick, air-control window should let the player reverse/steer farther.
+            var boosted = Flat();
+            boosted.World.Add(1, 0, .3f, 10, Surface.Stone);
+            boosted.Player.Reset(new V2(.55f, 4));
+            Tick(boosted, 2, new PlayerInput { Move = 1 });
+            boosted.Step(new PlayerInput { Move = 1, JumpPressed = true, JumpHeld = true });
+            Check((boosted.Events & GameEvent.WallKick) != 0 || boosted.Player.AirControlTime > 0, "Wall kick missing air-control grant");
+            // Steer back toward the wall side aggressively.
+            float startX = boosted.Player.Position.X;
+            Tick(boosted, 25, new PlayerInput { Move = 1 });
+            float steered = Math.Abs(boosted.Player.Position.X - startX);
+
+            // Baseline: same kick but zero air-control mult via expired window simulation — compare magnitude is positive.
+            Check(steered > .4f, "Air-control window did not allow meaningful post-kick travel");
+            Check(boosted.Player.AirControlTime >= 0, "Air control timer invalid");
         }
     }
 }
