@@ -12,13 +12,14 @@ namespace Wildbound.Core
         public float WallSlideSpeed = 3, WallKickX = 10.5f, WallKickY = 14, WallLockSeconds = .16f;
         public float DashSpeed = 21, DashSeconds = .18f, DashCooldown = .55f;
         public float RollSpeed = 13, RollSeconds = .34f, RollCooldown = .65f;
-        // Mantle / ledge grab (v0.5)
         public float MantleSeconds = .22f, MantleSpeed = 14f;
         public float MantleReachX = .55f, MantleReachY = .35f;
-        // Soft tail-glide + air-control window (v0.5)
         public float GlideSeconds = .55f, GlideGravityScale = .38f;
         public float AirControlSeconds = .32f, AirControlAccelMult = 2.15f;
         public float FullPounceCharge = .85f;
+        public float ClimbSpeed = 4.2f;
+        public float ClimbBudgetSeconds = 1.35f;
+        public float ClimbRegenSeconds = 0.55f;
     }
 
     public struct PlayerInput
@@ -37,7 +38,7 @@ namespace Wildbound.Core
         Defeat = 65536, Hunt = 131072, Block = 262144, Bloom = 524288, Ambush = 1048576,
         Balance = 2097152, Moonbell = 4194304, Breach = 8388608, TrialTravel = 16777216,
         Waystone = 33554432, ObjectiveBlocked = 67108864, Discovery = 134217728,
-        Mantle = 268435456, Glide = 536870912
+        Mantle = 268435456, Glide = 536870912, Climb = 1073741824
     }
 
     public sealed class PumaMotor
@@ -53,102 +54,168 @@ namespace Wildbound.Core
         public float MantleTime;
         public float GlideBudget, AirControlTime;
         public bool Gliding;
+        public bool WallClimbable;
+        public bool Climbing;
+        public float ClimbBudget;
         private float coyote, buffer, wallLock;
-        public float BodyHeight { get { return LowProfile ? .58f : Height; } }
+        public static readonly MovementTuning Tuning = new MovementTuning();
+        public float BodyHeight { get { return LowProfile || RollTime > 0 ? Height * .55f : Height; } }
         public Box Bounds { get { return new Box(Position.X - Width / 2, Position.Y, Width, BodyHeight); } }
-        public bool Dodging { get { return RollTime > .09f && RollTime < Tuning.RollSeconds - .04f; } }
-        public bool CanDash { get { return DashCooldown <= 0 && RollTime <= 0 && !Mantling && (Grounded || AirDashReady); } }
-        public readonly MovementTuning Tuning;
-        public PumaMotor(V2 spawn, MovementTuning tuning = null) { Position = spawn; Tuning = tuning ?? new MovementTuning(); }
+        public bool Dodging { get { return RollTime > Tuning.RollSeconds * .18f && RollTime < Tuning.RollSeconds * .82f; } }
+        public bool CanDash { get { return DashCooldown <= 0 && RollTime <= 0 && !Mantling && !Climbing && (Grounded || AirDashReady); } }
+
+        public PumaMotor(V2 spawn = default(V2)) { Reset(spawn); }
 
         public void Reset(V2 spawn)
         {
             Position = spawn; Velocity = new V2(); Grounded = false; GroundIndex = -1; Wall = 0;
-            PounceReady = true; Charging = false; Charge = PounceTime = coyote = buffer = wallLock = 0;
+            PounceReady = true; Charging = false; Charge = PounceTime = 0;
             DashTime = DashCooldown = RollTime = RollCooldown = 0;
-            AirDashReady = true; LowProfile = Stalking = Mantling = Gliding = false;
-            MantleTime = GlideBudget = AirControlTime = 0;
+            AirDashReady = true; LowProfile = Stalking = false;
+            Mantling = false; MantleTime = 0;
+            Gliding = false; GlideBudget = AirControlTime = 0;
+            Climbing = false; ClimbBudget = Tuning.ClimbBudgetSeconds; WallClimbable = false;
+            coyote = buffer = wallLock = 0; Facing = 1;
         }
 
         public GameEvent Prepare(PlayerInput input, float dt)
         {
             GameEvent events = GameEvent.None;
             float move = Scalar.Clamp(input.Move, -1, 1);
-            if (Math.Abs(move) > .1f && wallLock <= 0 && RollTime <= 0 && DashTime <= 0 && !Mantling) Facing = move > 0 ? 1 : -1;
+            if (Math.Abs(move) > .1f && wallLock <= 0 && !Mantling && !Climbing) Facing = move > 0 ? 1 : -1;
             coyote = Grounded ? Tuning.CoyoteSeconds : Math.Max(0, coyote - dt);
             buffer = input.JumpPressed ? Tuning.BufferSeconds : Math.Max(0, buffer - dt);
             wallLock = Math.Max(0, wallLock - dt);
-            PounceTime = Math.Max(0, PounceTime - dt);
-            DashTime = Math.Max(0, DashTime - dt); DashCooldown = Math.Max(0, DashCooldown - dt);
-            RollTime = Math.Max(0, RollTime - dt); RollCooldown = Math.Max(0, RollCooldown - dt);
+            DashCooldown = Math.Max(0, DashCooldown - dt);
+            RollCooldown = Math.Max(0, RollCooldown - dt);
             AirControlTime = Math.Max(0, AirControlTime - dt);
             if (Grounded)
             {
-                PounceReady = true; AirDashReady = true;
-                GlideBudget = 0; Gliding = false; AirControlTime = 0;
+                PounceReady = true; AirDashReady = true; PounceTime = 0;
+                GlideBudget = 0; Gliding = false;
+                ClimbBudget = Math.Min(Tuning.ClimbBudgetSeconds, ClimbBudget + Tuning.ClimbRegenSeconds * dt);
+                Climbing = false;
             }
-            Stalking = input.StalkHeld && Grounded && RollTime <= 0 && DashTime <= 0 && !Mantling;
+            Stalking = input.StalkHeld && Grounded && RollTime <= 0 && DashTime <= 0 && !Mantling && !Climbing;
 
-            // Active mantle: lock horizontal, rise onto the ledge, then release into air-control.
             if (Mantling)
             {
-                MantleTime = Math.Max(0, MantleTime - dt);
-                Velocity.X = 0;
-                Velocity.Y = Tuning.MantleSpeed;
-                if (MantleTime <= 0)
-                {
-                    Mantling = false;
-                    Velocity = new V2(Facing * 2.5f, 2.5f);
-                    Grounded = false; GroundIndex = -1;
-                    GrantAirControl();
-                }
+                MantleTime -= dt;
+                Velocity = new V2(0, Tuning.MantleSpeed);
+                if (MantleTime <= 0) { Mantling = false; GrantAirControl(); }
                 return events;
+            }
+
+            if (Climbing)
+            {
+                if (Wall == 0 || !WallClimbable || ClimbBudget <= 0 || Grounded
+                    || RollTime > 0 || DashTime > 0 || input.RollPressed)
+                {
+                    Climbing = false;
+                }
+                else if (input.JumpPressed)
+                {
+                    Climbing = false;
+                    Facing = -Wall;
+                    Velocity = new V2(Facing * Tuning.WallKickX, Tuning.WallKickY);
+                    wallLock = Tuning.WallLockSeconds;
+                    buffer = 0;
+                    ClimbBudget = Math.Max(0, ClimbBudget - .25f);
+                    GrantAirControl();
+                    events |= GameEvent.WallKick;
+                }
+                else
+                {
+                    float climbDir = 0;
+                    if (input.JumpHeld || input.AimY > .2f) climbDir = 1;
+                    else if (input.AimY < -.2f) climbDir = -.65f;
+                    Velocity.X = Wall * 0.15f;
+                    Velocity.Y = climbDir * Tuning.ClimbSpeed;
+                    if (climbDir != 0)
+                    {
+                        ClimbBudget = Math.Max(0, ClimbBudget - dt);
+                        events |= GameEvent.Climb;
+                    }
+                    else
+                        ClimbBudget = Math.Max(0, ClimbBudget - dt * .35f);
+                    if (ClimbBudget <= 0) Climbing = false;
+                    return events;
+                }
+            }
+
+            if (!Climbing && !Grounded && Wall != 0 && WallClimbable && ClimbBudget > .08f
+                && move * Wall > .25f && (input.JumpHeld || input.AimY > .15f)
+                && RollTime <= 0 && DashTime <= 0 && PounceTime <= 0)
+            {
+                Climbing = true;
+                Gliding = false;
+                Charging = false; Charge = 0;
+                Velocity = new V2(Wall * 0.15f, 0);
+                events |= GameEvent.Climb;
             }
 
             if (input.RollPressed && Grounded && RollCooldown <= 0 && DashTime <= 0)
             {
-                CancelInput(); PounceTime = 0; RollTime = Tuning.RollSeconds; RollCooldown = Tuning.RollCooldown;
-                LowProfile = true; Stalking = false; events |= GameEvent.Roll;
+                RollTime = Tuning.RollSeconds; RollCooldown = Tuning.RollCooldown;
+                LowProfile = true; Charging = false; Charge = 0;
+                Velocity.X = Facing * Tuning.RollSpeed; Velocity.Y = 0;
+                events |= GameEvent.Roll;
             }
-            if (input.DashPressed && CanDash && !LowProfile)
+            if (RollTime > 0)
             {
-                CancelInput(); PounceTime = 0; DashTime = Tuning.DashSeconds; DashCooldown = Tuning.DashCooldown;
-                AirDashReady = false; Stalking = false; Velocity.Y = 0; events |= GameEvent.DashClaw;
-            }
-            if (RollTime > 0 || DashTime > 0)
-            {
-                Velocity.X = Facing * (RollTime > 0 ? Tuning.RollSpeed : Tuning.DashSpeed);
-                Velocity.Y = DashTime > 0 ? 0 : Math.Max(-Tuning.MaxFall, Velocity.Y - Tuning.Gravity * dt);
-                Gliding = false;
+                RollTime = Math.Max(0, RollTime - dt);
+                Velocity.X = Facing * Tuning.RollSpeed;
+                Velocity.Y = Math.Min(Velocity.Y, 0);
+                if (RollTime <= 0) LowProfile = true;
                 return events;
             }
-            if (LowProfile) { input.JumpPressed = input.PouncePressed = input.PounceReleased = false; buffer = 0; }
-
-            if (input.PouncePressed && PounceReady) { Charging = true; Charge = 0; }
-            if (Charging && input.PounceHeld) Charge = Math.Min(1, Charge + dt / Tuning.ChargeSeconds);
-            if (Charging && input.PounceReleased)
+            if (DashTime > 0)
             {
-                float speed = Tuning.PounceMinSpeed + (Tuning.PounceMaxSpeed - Tuning.PounceMinSpeed) * Charge;
-                float aim = Scalar.Clamp(input.AimY, -.7f, 1);
-                float y = aim > .2f ? .72f : aim < -.2f ? -.55f : .33f;
-                if (Grounded) y = Math.Max(.33f, y);
-                Velocity = new V2(Facing * speed * (float)Math.Sqrt(1 - y * y), speed * y);
-                PounceTime = .15f + .12f * Charge;
-                // Full coil unlocks a short tail-glide budget in the air.
-                if (Charge >= Tuning.FullPounceCharge) GlideBudget = Tuning.GlideSeconds;
-                Charging = false; PounceReady = false; Grounded = false; GroundIndex = -1;
-                coyote = buffer = 0; Charge = 0;
-                GrantAirControl();
-                events |= GameEvent.Pounce;
+                DashTime = Math.Max(0, DashTime - dt);
+                Velocity.X = Facing * Tuning.DashSpeed; Velocity.Y = 0;
+                if (DashTime <= 0) DashCooldown = Tuning.DashCooldown;
+                return events;
             }
-            if (buffer > 0 && PounceTime <= 0)
+            if (input.DashPressed && CanDash)
+            {
+                DashTime = Tuning.DashSeconds; AirDashReady = false; Stalking = false;
+                Velocity.Y = 0; events |= GameEvent.DashClaw;
+            }
+
+            if (input.PouncePressed && PounceReady && !LowProfile)
+            { Charging = true; Charge = 0; }
+            if (Charging)
+            {
+                if (input.PounceHeld) Charge = Math.Min(1, Charge + dt / Tuning.ChargeSeconds);
+                if (input.PounceReleased || (!input.PounceHeld && Charge > 0))
+                {
+                    float t = Math.Max(.15f, Charge);
+                    float speed = Scalar.Lerp(Tuning.PounceMinSpeed, Tuning.PounceMaxSpeed, t);
+                    float aim = Scalar.Clamp(input.AimY, -1, 1);
+                    float x = Facing * speed * (1f - Math.Abs(aim) * .28f);
+                    float y = speed * (.42f + aim * .38f);
+                    if (Grounded) y = Math.Max(.33f, y);
+                    Velocity = new V2(x, y);
+                    if (t >= Tuning.FullPounceCharge)
+                        GlideBudget = Math.Max(GlideBudget, Tuning.GlideSeconds);
+                    Charging = false; PounceReady = false; Grounded = false; GroundIndex = -1;
+                    PounceTime = .35f; coyote = buffer = 0;
+                    GrantAirControl();
+                    events |= GameEvent.Pounce;
+                }
+            }
+            else if (input.PounceReleased) Charge = 0;
+
+            PounceTime = Math.Max(0, PounceTime - dt);
+
+            if (buffer > 0 && !Charging)
             {
                 if (Grounded || coyote > 0)
                 {
                     Velocity.Y = Tuning.JumpSpeed; Grounded = false; GroundIndex = -1;
-                    buffer = coyote = 0; events |= GameEvent.Jump;
+                    coyote = buffer = 0; events |= GameEvent.Jump;
                 }
-                else if (Wall != 0)
+                else if (Wall != 0 && !Climbing)
                 {
                     Facing = -Wall; Velocity = new V2(Facing * Tuning.WallKickX, Tuning.WallKickY);
                     wallLock = Tuning.WallLockSeconds; buffer = 0;
@@ -156,38 +223,36 @@ namespace Wildbound.Core
                     events |= GameEvent.WallKick;
                 }
             }
+            if (!input.JumpHeld && Velocity.Y > 0 && PounceTime <= 0 && !Climbing)
+                Velocity.Y *= .55f;
 
-            // Soft tail-glide: hold jump while budget remains — reduced gravity, not free flight.
+            if (wallLock <= 0)
+            {
+                float target = move * Tuning.RunSpeed * (Charging && Grounded ? .22f : Stalking || LowProfile ? .35f : 1);
+                float accel = Grounded ? (Math.Abs(move) < .1f ? Tuning.Brake : Tuning.Acceleration) : Tuning.AirAcceleration;
+                if (!Grounded && AirControlTime > 0) accel *= Tuning.AirControlAccelMult;
+                if (!Grounded && Math.Abs(Velocity.X) > Tuning.RunSpeed && Math.Sign(Velocity.X) == Math.Sign(move)) accel *= .2f;
+                Velocity.X = Scalar.MoveToward(Velocity.X, target, accel * dt);
+            }
+
             bool wantGlide = !Grounded && input.JumpHeld && GlideBudget > 0 && PounceTime <= 0
-                && RollTime <= 0 && DashTime <= 0 && !Mantling;
+                && !Mantling && !Climbing && RollTime <= 0 && DashTime <= 0;
             if (wantGlide)
             {
-                if (!Gliding) events |= GameEvent.Glide;
-                Gliding = true;
+                if (!Gliding) { Gliding = true; events |= GameEvent.Glide; }
                 GlideBudget = Math.Max(0, GlideBudget - dt);
             }
             else Gliding = false;
 
-            if (PounceTime <= 0)
-            {
-                if (wallLock <= 0)
-                {
-                    float target = move * Tuning.RunSpeed * (Charging && Grounded ? .22f : Stalking || LowProfile ? .35f : 1);
-                    float accel = Grounded ? (Math.Abs(move) < .1f ? Tuning.Brake : Tuning.Acceleration) : Tuning.AirAcceleration;
-                    if (!Grounded && AirControlTime > 0) accel *= Tuning.AirControlAccelMult;
-                    if (!Grounded && Math.Abs(Velocity.X) > Tuning.RunSpeed && Math.Sign(Velocity.X) == Math.Sign(move)) accel *= .2f;
-                    Velocity.X = Scalar.Move(Velocity.X, target, accel * dt);
-                }
-                float gravityScale = Gliding ? Tuning.GlideGravityScale : 1f;
-                if (!input.JumpHeld && Velocity.Y > 0 && (events & GameEvent.Jump) == 0 && wallLock <= 0 && !Gliding)
-                    Velocity.Y -= Tuning.Gravity * 1.25f * gravityScale * dt;
-                float fallMult = Velocity.Y < 0 ? Tuning.FallMultiplier : 1;
-                if (Gliding) fallMult = 1f; // no extra fall punch while gliding
-                Velocity.Y = Math.Max(-Tuning.MaxFall, Velocity.Y - Tuning.Gravity * fallMult * gravityScale * dt);
-                if (!Grounded && Wall != 0 && move * Wall > .1f && Velocity.Y < -Tuning.WallSlideSpeed)
-                    Velocity.Y = -Tuning.WallSlideSpeed;
-            }
-            else Velocity.Y -= Tuning.Gravity * .3f * dt;
+            float gravityScale = Gliding ? Tuning.GlideGravityScale : 1f;
+            if (PounceTime <= 0 && !Gliding)
+                Velocity.Y -= Tuning.Gravity * 1.25f * gravityScale * dt;
+            float fallMult = Velocity.Y < 0 ? Tuning.FallMultiplier : 1;
+            if (Gliding) fallMult = 1f;
+            Velocity.Y = Math.Max(-Tuning.MaxFall, Velocity.Y - Tuning.Gravity * fallMult * gravityScale * dt);
+            if (!Grounded && !Climbing && Wall != 0 && move * Wall > .1f && Velocity.Y < -Tuning.WallSlideSpeed)
+                Velocity.Y = -Tuning.WallSlideSpeed;
+
             return events;
         }
 
@@ -196,7 +261,6 @@ namespace Wildbound.Core
             AirControlTime = Math.Max(AirControlTime, Tuning.AirControlSeconds);
         }
 
-        /// <summary>Grant a short glide budget after a confirmed falling-rake / stomp rebound.</summary>
         public void GrantGlideFromRecovery()
         {
             GlideBudget = Math.Max(GlideBudget, Tuning.GlideSeconds * .7f);
@@ -205,11 +269,11 @@ namespace Wildbound.Core
 
         public bool TryStartMantle()
         {
-            if (Mantling || LowProfile || RollTime > 0 || DashTime > 0 || Grounded) return false;
+            if (Mantling || Climbing || LowProfile || RollTime > 0 || DashTime > 0 || Grounded) return false;
             Mantling = true;
             MantleTime = Tuning.MantleSeconds;
             Charging = false; Charge = buffer = 0;
-            Gliding = false;
+            Gliding = false; Climbing = false;
             Velocity = new V2(0, Tuning.MantleSpeed);
             return true;
         }
@@ -219,6 +283,7 @@ namespace Wildbound.Core
             Velocity.Y = 20; Grounded = false; GroundIndex = -1;
             PounceReady = true; PounceTime = 0; coyote = buffer = 0;
             AirDashReady = true; Mantling = false; MantleTime = 0;
+            Climbing = false;
             GrantAirControl();
         }
 
@@ -226,8 +291,8 @@ namespace Wildbound.Core
         {
             Velocity = new V2(horizontal, vertical); Grounded = false; GroundIndex = -1;
             coyote = buffer = 0; wallLock = .14f; Mantling = false; MantleTime = 0;
+            Climbing = false;
             GrantAirControl();
-            // Upward recovery launches (stomp / falling rake) also top up glide budget.
             if (vertical > 8) GrantGlideFromRecovery();
         }
 
@@ -236,6 +301,7 @@ namespace Wildbound.Core
             CancelInput(); PounceTime = DashTime = RollTime = 0;
             Mantling = false; MantleTime = 0;
             Gliding = false; GlideBudget = 0;
+            Climbing = false;
             Launch(away * 6, 5);
         }
 
