@@ -14,6 +14,7 @@ namespace Wildbound.Tests
             foreach (var pair in NaturalSystemsCases.All) All.Add(pair.Key, pair.Value);
             foreach (var pair in ClimbCases.All) All.Add(pair.Key, pair.Value);
             foreach (var pair in CinderCases.All) All.Add(pair.Key, pair.Value);
+            foreach (var pair in EncounterCases.All) All.Add(pair.Key, pair.Value);
         }
         public static readonly Dictionary<string, Action> All = new Dictionary<string, Action>
         {
