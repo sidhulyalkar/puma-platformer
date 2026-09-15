@@ -1,14 +1,26 @@
 # v0.17 recover
 
-## Apply complete core dens/feel files
+**PR:** https://github.com/sidhulyalkar/puma-platformer/pull/16
+
+## Best path (from a machine with git push)
+
+The sandbox has a complete local commit with full Movement/Enemies/GameSession/WorldRegions. Prefer:
 
 ```bash
+git fetch origin
 git checkout feature/v0.17-consolidated
-python3 patches/apply_v017_core.py
-grep -n Prepare Assets/Wildbound/Core/Movement.cs
-grep -n Prowler Assets/Wildbound/Core/Enemies.cs
-git add Assets/Wildbound/Core && git commit -m "feat(v0.17): apply dens/feel core from patches" && git push
+# If you have the local workspace with complete files, push:
+git push origin feature/v0.17-consolidated
 ```
 
-## PR
-https://github.com/sidhulyalkar/puma-platformer/pull/16
+## Apply from patches (partial)
+
+```bash
+python3 patches/apply_v017_core.py
+# Expect: Movement, Enemies (if b64 present), GameSession, WorldRegions
+grep Prepare Assets/Wildbound/Core/Movement.cs
+grep Prowler Assets/Wildbound/Core/Enemies.cs
+```
+
+## What is already real source on remote
+Encounter dens clear, Exploration Frostglass IDs, WorldDefinition Ice/fragile, arcade docs.
