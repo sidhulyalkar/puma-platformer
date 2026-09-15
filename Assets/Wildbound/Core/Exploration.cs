@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace Wildbound.Core
 {
     // Persistent IDs: never renumber these when reordering or moving places.
-    public enum WildPlaceId { RootHollow = 0, AmberOverlook = 1, StillwaterShelf = 2, LanternRoost = 3, CloudNest = 4, StarflowerCrown = 5, CharcoilDen = 6, QuietFireRidge = 7 }
+    public enum WildPlaceId { RootHollow = 0, AmberOverlook = 1, StillwaterShelf = 2, LanternRoost = 3, CloudNest = 4, StarflowerCrown = 5, CharcoilDen = 6, QuietFireRidge = 7, MirrorHollow = 8, GlassCrown = 9 }
 
     /// <summary>
     /// A discoverable wild place. Stories and MemoryTitle feed the vignette system (docs/STORY.md).
@@ -76,10 +76,11 @@ namespace Wildbound.Core
 
         public static readonly MemoryDescriptor[] All =
         {
-            new MemoryDescriptor(0, "First Pawprints", "Belonging / loss"),
-            new MemoryDescriptor(1, "The Keeper's Lantern", "Responsibility"),
-            new MemoryDescriptor(2, "Starflower Crown", "Acceptance / agency"),
-            new MemoryDescriptor(3, "Quiet Fire", "Endurance / warmth")
+            new MemoryDescriptor(0, "First Pawprints", "You were not the first to pad this moss."),
+            new MemoryDescriptor(1, "The Keeper's Lantern", "Someone kept a light here once."),
+            new MemoryDescriptor(2, "Starflower Crown", "Above the clouds the air is thin and honest."),
+            new MemoryDescriptor(3, "Quiet Fire", "Heat without hunger. Rest is also strength."),
+            new MemoryDescriptor(4, "Frostglass", "Cold clarifies. Every step answers itself.")
         };
 
         public static MemoryDescriptor ForBiome(int biome)
