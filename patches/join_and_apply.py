@@ -3,7 +3,7 @@
 from pathlib import Path
 import re, subprocess, sys
 p = Path(__file__).parent
-for name in ("GameSession", "WorldRegions"):
+for name in ("Movement", "GameSession", "WorldRegions"):
     parts = sorted(
         [x for x in p.glob(f"{name}.cs.gz.b64.p*") if re.search(r"\.p\d+$", x.name)],
         key=lambda x: int(re.search(r"\.p(\d+)$", x.name).group(1)),
