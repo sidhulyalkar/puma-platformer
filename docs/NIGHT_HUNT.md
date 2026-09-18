@@ -2,6 +2,8 @@
 
 The Night Hunt moveset gives the puma a hunting rhythm: approach quietly, read a tell, commit to a strike, and spend the opening on movement. Broad claw sweeps and deliberate recovery reflect the requested Reaper-style inspiration; the feline attacks, prey rewards, and light interactions are original.
 
+**Precision contracts** for AABB strikes, armor, stomps, projectiles, and double-hit exclusion live in [COMBAT_PRECISION.md](COMBAT_PRECISION.md).
+
 ## Moves
 
 | Action | Keyboard | Behavior |
@@ -65,4 +67,4 @@ Collectibles, discovered regions, checkpoints, and journey completion use the ex
 
 ## Verification boundary
 
-The shared core has 98 executable regression cases, including the authored moonbloom/moth interaction and 45,000 combat stress steps. See [VALIDATION.md](VALIDATION.md). Unity rendering, Runtime/Editor API compilation, hardware input, audio, and WebGL execution remain unverified in the development container. Tune these starting values after watching actual play.
+The shared core has executable regression cases covering combat timing, armor, projectiles, and the new AABB precision suite (see [COMBAT_PRECISION.md](COMBAT_PRECISION.md)). Unity rendering, Runtime/Editor API compilation, hardware input, audio, and WebGL execution remain unverified in the development container. Tune these starting values after watching actual play.
